@@ -52,7 +52,11 @@ Ohne App-Bundle: `swift build && .build/debug/FO48UControl`.
 
 ## Herkunft des Protokolls
 
-Das Protokoll wurde aus dem öffentlich erhältlichen Gigabyte-Installer (Sidekick, .NET-Assemblies) per Analyse für Interoperabilität gewonnen und am eigenen Gerät nachgemessen. Der Repository-Inhalt enthält **keine** Gigabyte-Binaries, Dekompilate oder Konfigurationsdateien; diese liegen lokal unter `_analyse/` und sind von Git ausgeschlossen.
+Das DDC/CI-Protokoll des FO48U wurde aus dem öffentlich erhältlichen Gigabyte-Installer (OSD Sidekick) analysiert, um ein unabhängiges, interoperables Programm für macOS zu schreiben, und anschließend am eigenen Gerät nachgemessen. Der Code in diesem Repository ist eigenständig in Swift geschrieben; Quellcode, Binaries, Dekompilate, Konfigurationsdateien oder Texte von Gigabyte sind **nicht** enthalten und liegen, soweit lokal vorhanden, außerhalb von Git. Dokumentiert sind nur Befehlsbytes, Wertebereiche und Messwerte (`docs/PROTOKOLL.md`).
+
+## Entstehung
+
+Dieses Projekt wurde mit Unterstützung der KI Claude (Anthropic) über Claude Code entwickelt: Analyse, Code und Dokumentation entstanden im Dialog, die Messungen und Tests liefen am echten Monitor. Die Commits tragen entsprechende `Co-Authored-By`-Zeilen.
 
 ## Lizenz
 
