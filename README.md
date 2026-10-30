@@ -16,11 +16,16 @@ Helligkeit, Kontrast, Lautstärke, Schärfe, Black eQualizer, Bildmodus, Eingang
 
 ## Installation
 
+**Fertiges Image:** `FO48U-Control-<Version>.dmg` von der Releases-Seite laden, öffnen und die App nach „Programme“ ziehen. Die App ist nicht notarisiert: beim ersten Start im Finder Rechtsklick → „Öffnen“ (oder unter Systemeinstellungen → Datenschutz & Sicherheit → „Trotzdem öffnen“).
+
+**Selbst bauen:**
+
 ```sh
 git clone https://github.com/ErkanOzd/AORUS-FO48U.git && cd AORUS-FO48U
 scripts/build-app.sh                       # baut dist/FO48U Control.app (ad-hoc signiert)
 cp -R "dist/FO48U Control.app" ~/Applications/
 open ~/Applications/"FO48U Control.app"
+scripts/make-dmg.sh                        # optional: baut dist/FO48U-Control-<Version>.dmg
 ```
 
 Die App ist nicht notarisiert; beim ersten Start ggf. im Finder per Rechtsklick „Öffnen“. Autostart: Schalter „Beim Anmelden starten“ im Menü oder `FO48UControl --autostart on|off`.

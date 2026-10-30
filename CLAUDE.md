@@ -9,14 +9,14 @@
 
 ## Befehle
 - Archivinhalt prüfen: `unzip -l GCC_26.09.10.01.zip`
-- App bauen: `swift build`; App-Bundle: `scripts/build-app.sh` (nach `dist/`); Selbsttest am Monitor: `.build/debug/FO48UControl --selftest`; Schreibtest (Helligkeit ±10 mit Rücklesen, stellt zurück): `--writetest`; Quellenwechsel-Test (Bild fällt kurz aus): `--inputtest`; App: `.build/debug/FO48UControl`
+- App bauen: `swift build`; App-Bundle: `scripts/build-app.sh` (nach `dist/`); Installer-Image: `scripts/make-dmg.sh`; Selbsttest am Monitor: `.build/debug/FO48UControl --selftest`; Schreibtest (Helligkeit ±10 mit Rücklesen, stellt zurück): `--writetest`; Quellenwechsel-Test (Bild fällt kurz aus): `--inputtest`; App: `.build/debug/FO48UControl`
 - Probe bauen/starten (nur lesend): `swiftc -O _analyse/poc/ddcprobe.swift -o _analyse/poc/ddcprobe -framework IOKit && _analyse/poc/ddcprobe`
 - Monitor schnell prüfen: `m1ddc display 2 get luminance`
 - Analyse-Werkzeuge (Homebrew): `sevenzip` (`7zz`), `dotnet` + `ilspycmd` (`~/.dotnet/tools`, `DOTNET_ROOT=/opt/homebrew/opt/dotnet/libexec`), `radare2`, `m1ddc`
 
 ## Struktur
 - `GCC_26.09.10.01.zip` — Installer GIGABYTE Control Center, Version 26.09.10.01
-- `scripts/build-app.sh` — baut `dist/FO48U Control.app`; `LICENSE` (MIT)
+- `scripts/build-app.sh` — baut `dist/FO48U Control.app`; `scripts/make-dmg.sh` — `.dmg` mit Applications-Link; `scripts/make-icon.swift` — zeichnet `Resources/AppIcon.icns`; `LICENSE` (MIT)
 - `Package.swift`, `Sources/FO48UKit` (DDC-Schicht), `Sources/FO48UControl` (Menüleisten-App)
 - `docs/PROTOKOLL.md` — DDC/CI-Protokoll, Sub-IDs, Messwerte (Quelle der Wahrheit für Befehle)
 - `_analyse/poc/` — Swift-Proof-of-Concept; `_analyse/meta/` — Geräte-/Konfigurationsdateien aus dem Installer; `_analyse/sidekick/`, `_analyse/decomp/` — entpackte Binaries und Dekompilate (nicht im Repo)

@@ -7,7 +7,8 @@ app="$root/dist/FO48U Control.app"
 cd "$root"
 swift build -c release
 rm -rf "$app"
-mkdir -p "$app/Contents/MacOS"
+mkdir -p "$app/Contents/MacOS" "$app/Contents/Resources"
+cp Resources/AppIcon.icns "$app/Contents/Resources/AppIcon.icns"
 cp .build/release/FO48UControl "$app/Contents/MacOS/FO48UControl"
 cat > "$app/Contents/Info.plist" <<PLIST
 <?xml version="1.0" encoding="UTF-8"?>
@@ -16,6 +17,7 @@ cat > "$app/Contents/Info.plist" <<PLIST
 <dict>
   <key>CFBundleIdentifier</key><string>io.github.erkanozd.fo48ucontrol</string>
   <key>CFBundleName</key><string>FO48U Control</string>
+  <key>CFBundleIconFile</key><string>AppIcon</string>
   <key>CFBundleExecutable</key><string>FO48UControl</string>
   <key>CFBundlePackageType</key><string>APPL</string>
   <key>CFBundleShortVersionString</key><string>0.1.0</string>
