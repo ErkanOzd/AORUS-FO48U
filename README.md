@@ -44,7 +44,7 @@ Ohne App-Bundle: `swift build && .build/debug/MonitorDeck`.
 ## Hinweise
 
 - Die App nutzt die **private Apple-API `IOAVService`**. Sie ist nicht App-Store-tauglich und kann mit einem macOS-Update brechen.
-- Der Eingangswechsel auf HDMI/DisplayPort nimmt dem Mac das Bild, bis wieder USB-C gewählt ist.
+- Der Eingangswechsel auf HDMI/DisplayPort nimmt dem Mac das Bild, bis wieder USB-C gewählt ist; die App fragt vorher nach. Zurückschalten über das Menü der App funktionierte im Test (ein Monitor, ein Mac).
 - Es werden nur die hier dokumentierten Befehle gesendet. Firmware-Flash-Funktionen des Herstellers sind bewusst nicht umgesetzt.
 - Getestet nur mit **einem AORUS FO48U** (Firmware vermutlich F06, Deutung) per USB-C an einem Apple-Silicon-Mac. Andere Monitore und Mac-Modelle sind ungeprüft; Details in [`docs/FUNKTIONEN.md`](docs/FUNKTIONEN.md).
 - Eagle Eye und Night Vision fehlen im Menü: Der Monitor beantwortet diese Abfragen nicht (siehe `docs/FUNKTIONEN.md`).
