@@ -23,13 +23,14 @@
 - `scripts/build-app.sh` baut `dist/MonitorDeck.app` (LSUIElement, ad-hoc signiert); aus `~/Applications` gestartet läuft sie ohne Dock-Symbol (belegt). Autostart über `SMAppService`: `--autostart on` meldet „an“ (belegt); tatsächlicher Start nach Neuanmeldung unverifiziert.
 - Repo für Veröffentlichung vorbereitet (MIT-Lizenz, README, keine Gigabyte-Dateien, keine Seriennummer).
 - OverDrive-Stufen 0–4 = Aus, Smart OD, Bildqualität, Ausgewogen, Geschwindigkeit (Namen aus `OSD.cs`, Anzahl passt zu max 4, Zuordnung ungeprüft); Gamma/Farbtemperatur: Namen aus `OSD.cs` (siehe `docs/PROTOKOLL.md`), am OSD noch nicht gegengelesen.
-- Menü neu: Schärfe, Farbtemperatur, Fadenkreuz, Aim Stabilizer, Refresh-Anzeige; Schreiben mit Rücklesen am Monitor belegt. Eagle Eye/Night Vision nicht im Menü (Schreiben greift nicht). PIP/PBP, OSD-Größe, KVM bewusst nicht aufgenommen (ungeprüft).
+- Menü neu: Schärfe, Farbtemperatur, Fadenkreuz, Aim Stabilizer, Refresh-Anzeige; Schreiben mit Rücklesen am Monitor belegt. Eagle Eye/Night Vision nicht im Menü (Monitor beantwortet die Abfrage nicht, siehe `docs/PROTOKOLL.md`). PIP/PBP, OSD-Größe, KVM bewusst nicht aufgenommen (ungeprüft).
 - Entpackte Gigabyte-Dateien (ca. 1,7 GB) gelöscht, `_analyse/sidekick` (96 MB) bleibt; alles aus dem ZIP reproduzierbar. Keine Windows-VM nötig gewesen.
 
+- Review-Blocker behoben (2026-10-30): Zielmonitor-Wahl mit Pfad-Bindung bei Neu-Suche (K1, nur mit einem Monitor getestet), DDC auf eigener Queue und Slider schreiben beim Loslassen (K2), `WriteResult` statt „Erfolg bei fehlendem Rücklesen“ (H1), Antwortprüfung auf Sub-ID und Prüfsumme (H2). `--writetest` und `--inputtest` liefen erfolgreich; Slider-Ziehen in der UI unverifiziert. Offen aus dem Review: Mittel- und Niedrig-Befunde.
 - App umbenannt in „MonitorDeck“ (generischer, vermeidet „Sidekick“ als Gigabyte-Produktname); Executable, Swift-Targets, Bundle-ID und Repo-Name unverändert. `docs/FUNKTIONEN.md` legt Funktionsumfang und Prüfstand offen; README lädt zum Testen mit anderen AORUS-Modellen ein.
 
 ## Nächste Schritte (priorisiert)
-1. Menü manuell per Klick prüfen (Slider, Bildmodus, Eingang, OverDrive); Gamma (1.8…2.6) und Farbtemperatur (Kalt/Normal/Warm) am Monitor-OSD gegenlesen; Eagle Eye/Night Vision: Voraussetzung klären.
+1. Menü manuell per Klick prüfen (Slider, Bildmodus, Eingang, OverDrive); Gamma (1.8…2.6) und Farbtemperatur (Kalt/Normal/Warm) am Monitor-OSD gegenlesen; Eagle Eye/Night Vision: klären, ob der FO48U sie überhaupt hat.
 2. Weitere Funktionen prüfen (PIP/PBP, OSD-Größe, KVM, Timer).
 3. Eingangswechsel mit Vorsicht testen: Wechsel weg von USB-C trennt das Bild des Macs.
 4. Funktionsumfang festlegen (Crosshair, Timer, KVM, PIP/PBP?) und prüfen, ob davon etwas nur über das USB-HID-Gerät läuft.

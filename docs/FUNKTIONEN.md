@@ -2,7 +2,7 @@
 
 Stand 2026-10-30. Geprüft wurde bisher **nur ein AORUS FO48U** (Firmware F06, Deutung siehe `docs/PROTOKOLL.md`, Abschnitt „Sub-IDs für `0xE0`“) per USB-C (DisplayPort-Alt-Mode) an einem Apple-Silicon-Mac. Alle anderen Monitore, Anschlüsse und Mac-Modelle sind ungeprüft.
 
-Belegstufen: **Lesen** = Wert vom Monitor abgefragt und plausibel; **Schreiben** = Wert gesetzt und vom Monitor zurückgelesen (`Monitor.write`); **Menü** = in der Menüleisten-App bedient. Nichts davon ist am Monitor-OSD gegengelesen, soweit nicht anders vermerkt.
+Belegstufen: **Lesen** = Wert vom Monitor abgefragt und plausibel; **Schreiben** = Wert gesetzt und vom Monitor zurückgelesen (`Monitor.write`); **Menü** = in der Menüleisten-App bedient. Antworten werden auf Sub-ID, Länge und Prüfsumme geprüft. Die Schreibtests von Schärfe, Farbtemperatur, Gamma, Aim Stabilizer, Refresh-Anzeige und Fadenkreuz liefen vor dieser Prüfung; mit ihr wurden nur Helligkeit und Eingang erneut getestet. Nichts davon ist am Monitor-OSD gegengelesen, soweit nicht anders vermerkt.
 
 ## Im Menü enthalten
 
@@ -25,7 +25,7 @@ Belegstufen: **Lesen** = Wert vom Monitor abgefragt und plausibel; **Schreiben**
 
 | Funktion | Grund |
 |---|---|
-| Eagle Eye, Night Vision | Der Monitor nimmt den Wert nicht an (bleibt 0). Voraussetzung ungeklärt. |
+| Eagle Eye, Night Vision, OSD-Größe | Der Monitor beantwortet diese Abfragen nicht (liefert nur ein Echo der vorherigen Antwort). Ob der FO48U sie unterstützt, ist offen; Details in `docs/PROTOKOLL.md`. |
 | PIP/PBP, OSD-Größe, KVM, Timer | bewusst nicht aufgenommen, ungeprüft |
 | RGB-Verstärkung, Farbsättigung, HDR, Local Dimming u. a. | Sub-IDs stehen in `docs/PROTOKOLL.md`, am FO48U nicht geprüft, ob unterstützt |
 

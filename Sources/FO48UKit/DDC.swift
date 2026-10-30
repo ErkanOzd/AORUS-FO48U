@@ -41,63 +41,111 @@ public struct Control: Hashable, Sendable {
 
 public struct Reading: Sendable { public let max: Int; public let current: Int }
 
-public final class Monitor {
-    private var service: AVService
+/// Ergebnis von `Monitor.write`.
+public enum WriteResult: Equatable, Sendable {
+    /// Der Monitor hat den Wert zurückgemeldet.
+    case confirmed
+    /// Gesendet, aber nichts zurücklesbar (z. B. nach Eingangswechsel).
+    case unconfirmed
+    /// Nicht angenommen; `actual` ist der zuletzt zurückgelesene Wert.
+    case rejected(actual: Int?)
 
-    /// Erster extern angeschlossener DDC-Dienst (`nil`, wenn keiner da ist).
-    private static func findService() -> AVService? {
+    /// Paket ging raus und wurde nicht widerlegt.
+    public var sent: Bool { if case .rejected = self { return false }; return true }
+}
+
+public final class Monitor: @unchecked Sendable {
+    private var service: AVService
+    /// IOService-Pfad des gewählten Dienstes: Neu-Suche akzeptiert nur denselben Anschluss.
+    private let path: String
+
+    /// Alle extern angeschlossenen DDC-Dienste samt Registry-Pfad.
+    private static func externalServices() -> [(AVService, String)] {
         var it: io_iterator_t = 0
-        guard IOServiceGetMatchingServices(kIOMainPortDefault, IOServiceMatching("DCPAVServiceProxy"), &it) == KERN_SUCCESS else { return nil }
+        guard IOServiceGetMatchingServices(kIOMainPortDefault, IOServiceMatching("DCPAVServiceProxy"), &it) == KERN_SUCCESS else { return [] }
         defer { IOObjectRelease(it) }
+        var found: [(AVService, String)] = []
         var entry = IOIteratorNext(it)
         while entry != 0 {
             defer { IOObjectRelease(entry); entry = IOIteratorNext(it) }
             let loc = IORegistryEntryCreateCFProperty(entry, "Location" as CFString, kCFAllocatorDefault, 0)?.takeRetainedValue() as? String
-            if loc == "External", let s = IOAVServiceCreateWithService(kCFAllocatorDefault, entry) {
-                return s.takeRetainedValue()
-            }
+            guard loc == "External", let s = IOAVServiceCreateWithService(kCFAllocatorDefault, entry) else { continue }
+            let buf = UnsafeMutablePointer<CChar>.allocate(capacity: 512)
+            defer { buf.deallocate() }
+            buf[0] = 0
+            _ = IORegistryEntryGetPath(entry, kIOServicePlane, buf)
+            found.append((s.takeRetainedValue(), String(cString: buf)))
         }
-        return nil
+        return found
     }
 
-    /// Erster extern angeschlossener Monitor mit DDC-Dienst (`nil`, wenn keiner da ist).
+    /// Ein Dienst gilt als Zielmonitor, wenn Helligkeit, Eingang und Bildmodus beantwortet werden
+    /// (die Herstellerregister `0xE0/0x2D` und `0xE0/0x2C` kennt nicht jeder Monitor).
+    private static func isTarget(_ s: AVService) -> Bool {
+        [Control.brightness, .input, .pictureMode].allSatisfy { transact(s, $0) != nil }
+    }
+
+    /// Erster extern angeschlossener Zielmonitor (`nil`, wenn keiner da ist).
     public init?() {
-        guard let s = Self.findService() else { return nil }
+        guard let (s, p) = Self.externalServices().first(where: { Self.isTarget($0.0) }) else { return nil }
         service = s
+        path = p
     }
 
-    private func send(_ payload: [UInt8]) -> Bool {
+    private static func write(_ s: AVService, _ payload: [UInt8]) -> Bool {
         var pkt: [UInt8] = [UInt8(0x80 | payload.count)] + payload
         var chk: UInt8 = 0x6E ^ 0x51
         for b in pkt { chk ^= b }
         pkt.append(chk)
-        if IOAVServiceWriteI2C(service, 0x37, 0x51, &pkt, UInt32(pkt.count)) == KERN_SUCCESS { return true }
-        // Nach Eingangswechsel/Neuverbindung ist der Dienst veraltet: neu suchen, einmal wiederholen.
-        guard let s = Self.findService() else { return false }
-        service = s
-        return IOAVServiceWriteI2C(service, 0x37, 0x51, &pkt, UInt32(pkt.count)) == KERN_SUCCESS
+        return IOAVServiceWriteI2C(s, 0x37, 0x51, &pkt, UInt32(pkt.count)) == KERN_SUCCESS
     }
 
-    public func read(_ c: Control) -> Reading? {
-        guard send(c.vendor ? [0x01, 0xE0, c.code] : [0x01, c.code]) else { return nil }
-        usleep(60_000)
+    private static func request(_ c: Control) -> [UInt8] { c.vendor ? [0x01, 0xE0, c.code] : [0x01, c.code] }
+
+    /// Liest und prüft die Antwort auf `request(c)`: Länge, Ergebniscode, angefragter Code, Prüfsumme.
+    private static func receive(_ s: AVService, _ c: Control) -> Reading? {
         var rx = [UInt8](repeating: 0, count: 12)
-        guard IOAVServiceReadI2C(service, 0x37, 0x51, &rx, 12) == KERN_SUCCESS, rx[0] == 0x6E, rx[2] == 0x02, rx[3] == 0x00 else { return nil }
+        guard IOAVServiceReadI2C(s, 0x37, 0x51, &rx, 12) == KERN_SUCCESS,
+              rx[0] == 0x6E, rx[1] == 0x88, rx[2] == 0x02, rx[3] == 0x00,
+              rx[4] == (c.vendor ? 0xE0 : c.code), !c.vendor || rx[5] == c.code,
+              rx[10] == rx[0..<10].reduce(0x50, ^) else { return nil }
         return Reading(max: Int(rx[6]) << 8 | Int(rx[7]), current: Int(rx[8]) << 8 | Int(rx[9]))
     }
 
-    /// Schreibt und liest zurück; bis zu 3 Versuche. `true`, wenn der Monitor den Wert bestätigt.
-    /// Lässt sich nichts zurücklesen (z. B. nach Eingangswechsel), zählt das gesendete Paket.
+    private static func transact(_ s: AVService, _ c: Control) -> Reading? {
+        guard write(s, request(c)) else { return nil }
+        usleep(60_000)
+        return receive(s, c)
+    }
+
+    private func send(_ payload: [UInt8]) -> Bool {
+        if Self.write(service, payload) { return true }
+        // Nach Eingangswechsel/Neuverbindung ist der Dienst veraltet: neu suchen, aber nur am selben Anschluss.
+        guard let (s, _) = Self.externalServices().first(where: { $0.1 == path }) else { return false }
+        service = s
+        return Self.write(service, payload)
+    }
+
+    public func read(_ c: Control) -> Reading? {
+        guard send(Self.request(c)) else { return nil }
+        usleep(60_000)
+        return Self.receive(service, c)
+    }
+
+    /// Schreibt und liest zurück; bis zu 3 Versuche (siehe `WriteResult`).
     @discardableResult
-    public func write(_ c: Control, _ value: Int) -> Bool {
+    public func write(_ c: Control, _ value: Int) -> WriteResult {
         let v = UInt8(clamping: value)
         let payload: [UInt8] = c.vendor ? [0x03, 0xE0, c.code, 0x00, v] : [0x03, c.code, 0x00, v]
-        for _ in 0..<3 {
+        var actual: Int?
+        for attempt in 0..<3 {
+            if attempt > 0 { usleep(150_000) }
             guard send(payload) else { continue }
             usleep(100_000)
-            guard let r = read(c) else { return true }
-            if r.current == Int(v) { return true }
+            guard let r = read(c) else { return .unconfirmed }
+            if r.current == Int(v) { return .confirmed }
+            actual = r.current
         }
-        return false
+        return .rejected(actual: actual)
     }
 }

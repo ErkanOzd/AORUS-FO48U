@@ -6,7 +6,7 @@ Menüleisten-App für macOS (Apple Silicon), die den **Gigabyte AORUS FO48U** pe
 
 ## Funktionen
 
-Helligkeit, Kontrast, Lautstärke, Schärfe, Black eQualizer, Bildmodus, Eingang, OverDrive, Gamma, Farbtemperatur, Fadenkreuz, FreeSync, Aim Stabilizer, Refresh-Anzeige, Autostart beim Anmelden. Jeder Schreibvorgang wird zurückgelesen und bis zu dreimal wiederholt; nach einem Eingangswechsel sucht die App den DDC-Dienst neu.
+Helligkeit, Kontrast, Lautstärke, Schärfe, Black eQualizer, Bildmodus, Eingang, OverDrive, Gamma, Farbtemperatur, Fadenkreuz, FreeSync, Aim Stabilizer, Refresh-Anzeige, Autostart beim Anmelden. Jeder Schreibvorgang wird zurückgelesen und bis zu dreimal wiederholt; zeigt der Monitor einen anderen Wert, übernimmt die Anzeige den gemeldeten Wert und weist darauf hin. Nach einem Eingangswechsel sucht die App den DDC-Dienst am selben Anschluss neu. Schieberegler schreiben erst beim Loslassen; der DDC-Zugriff läuft nicht auf dem Main-Thread. Bei mehreren externen Monitoren wählt die App den, der Helligkeit, Eingang und Bildmodus beantwortet (Heuristik).
 
 ## Voraussetzungen
 
@@ -47,7 +47,7 @@ Ohne App-Bundle: `swift build && .build/debug/FO48UControl`.
 - Der Eingangswechsel auf HDMI/DisplayPort nimmt dem Mac das Bild, bis wieder USB-C gewählt ist.
 - Es werden nur die hier dokumentierten Befehle gesendet. Firmware-Flash-Funktionen des Herstellers sind bewusst nicht umgesetzt.
 - Getestet nur mit **einem AORUS FO48U** (Firmware F06) per USB-C an einem Apple-Silicon-Mac. Andere Monitore und Mac-Modelle sind ungeprüft; Details in [`docs/FUNKTIONEN.md`](docs/FUNKTIONEN.md).
-- Eagle Eye und Night Vision werden vom Monitor nicht angenommen und fehlen deshalb im Menü.
+- Eagle Eye und Night Vision fehlen im Menü: Der Monitor beantwortet diese Abfragen nicht (siehe `docs/FUNKTIONEN.md`).
 
 ## Testen mit anderen AORUS-Monitoren
 
