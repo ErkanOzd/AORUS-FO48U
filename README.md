@@ -10,6 +10,8 @@ Menüleisten-App für macOS (Apple Silicon), die den **Gigabyte AORUS FO48U** pe
 
 Helligkeit, Kontrast, Lautstärke, Schärfe, Black eQualizer, Bildmodus, Eingang, OverDrive, Gamma, Farbtemperatur, Fadenkreuz, FreeSync, Aim Stabilizer, Refresh-Anzeige, Autostart beim Anmelden. Jeder Schreibvorgang wird zurückgelesen und bis zu dreimal wiederholt; zeigt der Monitor einen anderen Wert, übernimmt die Anzeige den gemeldeten Wert und weist darauf hin. Nach einem Eingangswechsel sucht die App den DDC-Dienst am selben Anschluss neu. Schieberegler schreiben erst beim Loslassen; der DDC-Zugriff läuft nicht auf dem Main-Thread. Bei mehreren externen Monitoren wählt die App den, der Helligkeit, Eingang und Bildmodus beantwortet (Heuristik).
 
+Die Oberfläche ist zweisprachig: Deutsch bei deutscher Systemsprache, sonst Englisch (*the UI is German on a German system, English otherwise*). Die README-Texte sind Deutsch.
+
 ## Voraussetzungen
 
 - Apple-Silicon-Mac, macOS 14 oder neuer

@@ -10,6 +10,10 @@ private func IOAVServiceWriteI2C(_ s: AVService, _ chip: UInt32, _ off: UInt32, 
 @_silgen_name("IOAVServiceReadI2C")
 private func IOAVServiceReadI2C(_ s: AVService, _ chip: UInt32, _ off: UInt32, _ buf: UnsafeMutableRawPointer, _ len: UInt32) -> IOReturn
 
+/// Deutsch bei deutscher Systemsprache, sonst Englisch.
+public let isGerman = Locale.preferredLanguages.first?.hasPrefix("de") ?? false
+public func tr(_ de: String, _ en: String) -> String { isGerman ? de : en }
+
 /// Ein steuerbarer Wert: Standard-VCP oder herstellerspezifisch (`0xE0` + Sub-ID).
 public struct Control: Hashable, Sendable {
     public let name: String
@@ -19,24 +23,24 @@ public struct Control: Hashable, Sendable {
         self.name = name; self.code = code; self.vendor = vendor
     }
 
-    public static let brightness = Control("Helligkeit", 0x10, vendor: false)
-    public static let contrast = Control("Kontrast", 0x12, vendor: false)
-    public static let volume = Control("Lautstärke", 0x62, vendor: false)
-    public static let sharpness = Control("Schärfe", 0x87, vendor: false)
-    public static let pictureMode = Control("Bildmodus", 0x2C)
-    public static let input = Control("Eingang", 0x2D)
+    public static let brightness = Control(tr("Helligkeit", "Brightness"), 0x10, vendor: false)
+    public static let contrast = Control(tr("Kontrast", "Contrast"), 0x12, vendor: false)
+    public static let volume = Control(tr("Lautstärke", "Volume"), 0x62, vendor: false)
+    public static let sharpness = Control(tr("Schärfe", "Sharpness"), 0x87, vendor: false)
+    public static let pictureMode = Control(tr("Bildmodus", "Picture Mode"), 0x2C)
+    public static let input = Control(tr("Eingang", "Input"), 0x2D)
     public static let overDrive = Control("OverDrive", 0x09)
     public static let gamma = Control("Gamma", 0x07)
     public static let blackEQ = Control("Black eQualizer", 0x02)
-    public static let colorTemp = Control("Farbtemperatur", 0x03)
+    public static let colorTemp = Control(tr("Farbtemperatur", "Color Temperature"), 0x03)
     public static let freeSync = Control("FreeSync", 0x0C)
     public static let aimStabilizer = Control("Aim Stabilizer", 0x0A)
-    public static let crosshair = Control("Fadenkreuz", 0x37)
-    public static let refreshOSD = Control("Refresh-Anzeige", 0x22)
+    public static let crosshair = Control(tr("Fadenkreuz", "Crosshair"), 0x37)
+    public static let refreshOSD = Control(tr("Refresh-Anzeige", "Refresh Rate OSD"), 0x22)
     public static let eagleEye = Control("Eagle Eye", 0x39)
     public static let nightVision = Control("Night Vision", 0x49)
     public static let pipPbp = Control("PIP/PBP", 0x0E)
-    public static let osdSize = Control("OSD-Größe", 0x3A)
+    public static let osdSize = Control(tr("OSD-Größe", "OSD Size"), 0x3A)
 }
 
 public struct Reading: Sendable { public let max: Int; public let current: Int }

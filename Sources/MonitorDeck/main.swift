@@ -2,23 +2,23 @@ import SwiftUI
 import ServiceManagement
 import FO48UKit
 
-let modes = ["Standard", "FPS", "RTS/RPG", "Film", "Lesen", "sRGB", "Custom 1", "Custom 2", "Custom 3"]
+let modes = ["Standard", "FPS", "RTS/RPG", tr("Film", "Movie"), tr("Lesen", "Reading"), "sRGB", "Custom 1", "Custom 2", "Custom 3"]
 let inputNames = ["HDMI 1", "HDMI 2", "DisplayPort", "USB-C"]
-let crosshairNames = ["Aus", "1", "2", "3", "4"]
-let gammaNames = ["Aus", "1.8", "2.0", "2.2", "2.4", "2.6"]
-let colorTempNames = ["Kalt", "Normal", "Warm"]
-let overDriveNames = ["Aus", "Smart OD", "Bildqualität", "Ausgewogen", "Geschwindigkeit"]
+let crosshairNames = [tr("Aus", "Off"), "1", "2", "3", "4"]
+let gammaNames = [tr("Aus", "Off"), "1.8", "2.0", "2.2", "2.4", "2.6"]
+let colorTempNames = [tr("Kalt", "Cool"), "Normal", tr("Warm", "Warm")]
+let overDriveNames = [tr("Aus", "Off"), "Smart OD", tr("Bildqualität", "Picture Quality"), tr("Ausgewogen", "Balanced"), tr("Geschwindigkeit", "Speed")]
 
 let knownFlags = ["--selftest", "--writetest", "--inputtest", "--autostart"]
 let cliArgs = Array(CommandLine.arguments.dropFirst())
-if let bad = cliArgs.first(where: { $0.hasPrefix("-") && !knownFlags.contains($0) })
+if let bad = cliArgs.first(where: { $0.hasPrefix("--") && !knownFlags.contains($0) })
     ?? (cliArgs.firstIndex(of: "--autostart").flatMap { i in cliArgs.dropFirst(i + 1).first.flatMap { ["on", "off"].contains($0) ? nil : $0 } }) {
-    print("Unbekanntes Argument: \(bad)\nAufruf: MonitorDeck [--selftest | --writetest | --inputtest | --autostart [on|off]]")
+    print(tr("Unbekanntes Argument", "Unknown argument") + ": \(bad)\n" + tr("Aufruf", "Usage") + ": MonitorDeck [--selftest | --writetest | --inputtest | --autostart [on|off]]")
     exit(2)
 }
 
 if CommandLine.arguments.contains("--selftest") {
-    guard let m = Monitor() else { print("kein Monitor"); exit(1) }
+    guard let m = Monitor() else { print(tr("kein Monitor", "no monitor")); exit(1) }
     var gelesen = 0
     for c in [Control.brightness, .contrast, .volume, .sharpness, .pictureMode, .input, .overDrive, .gamma, .blackEQ, .colorTemp, .freeSync, .aimStabilizer, .crosshair, .refreshOSD, .eagleEye, .nightVision, .pipPbp, .osdSize] {
         let r = m.read(c)
@@ -34,30 +34,30 @@ if let i = CommandLine.arguments.firstIndex(of: "--autostart") {
     do {
         if arg == "on" { try SMAppService.mainApp.register() }
         if arg == "off" { try SMAppService.mainApp.unregister() }
-    } catch { print("Fehler: \(error.localizedDescription)"); exit(1) }
-    print("Autostart:", SMAppService.mainApp.status == .enabled ? "an" : "aus (Status \(SMAppService.mainApp.status.rawValue))")
+    } catch { print(tr("Fehler", "Error") + ": \(error.localizedDescription)"); exit(1) }
+    print(tr("Autostart:", "Launch at login:"), SMAppService.mainApp.status == .enabled ? tr("an", "on") : tr("aus (Status \(SMAppService.mainApp.status.rawValue))", "off (status \(SMAppService.mainApp.status.rawValue))"))
     exit(0)
 }
 
 if CommandLine.arguments.contains("--writetest") {
     // Schreibt Helligkeit mit Rücklesen und stellt den Altwert wieder her.
-    guard let m = Monitor(), let alt = m.read(.brightness)?.current else { print("kein Monitor"); exit(1) }
+    guard let m = Monitor(), let alt = m.read(.brightness)?.current else { print(tr("kein Monitor", "no monitor")); exit(1) }
     let neu = alt >= 50 ? alt - 10 : alt + 10
     let ok1 = m.write(.brightness, neu) == .confirmed, jetzt = m.read(.brightness)?.current
     let ok2 = m.write(.brightness, alt) == .confirmed, danach = m.read(.brightness)?.current
-    print("alt \(alt) → neu \(neu): \(ok1), gelesen \(jetzt.map(String.init) ?? "–"); zurück: \(ok2), gelesen \(danach.map(String.init) ?? "–")")
+    print(tr("alt \(alt) → neu \(neu): \(ok1), gelesen \(jetzt.map(String.init) ?? "–"); zurück: \(ok2), gelesen \(danach.map(String.init) ?? "–")", "old \(alt) → new \(neu): \(ok1), read \(jetzt.map(String.init) ?? "–"); back: \(ok2), read \(danach.map(String.init) ?? "–")"))
     exit(ok1 && ok2 && danach == alt ? 0 : 1)
 }
 
 if CommandLine.arguments.contains("--inputtest") {
     // Schaltet kurz auf DisplayPort und versucht bis zu 30 s, auf USB-C zurückzuschalten.
-    guard let m = Monitor(), m.read(.input)?.current == 3 else { print("kein Monitor oder Eingang nicht USB-C"); exit(1) }
+    guard let m = Monitor(), m.read(.input)?.current == 3 else { print(tr("kein Monitor oder Eingang nicht USB-C", "no monitor or input is not USB-C")); exit(1) }
     print("auf DisplayPort:", m.write(.input, 2).sent); sleep(3)
     for i in 1...30 {
-        if m.write(.input, 3).sent, m.read(.input)?.current == 3 { print("zurück auf USB-C nach Versuch \(i)"); exit(0) }
+        if m.write(.input, 3).sent, m.read(.input)?.current == 3 { print(tr("zurück auf USB-C nach Versuch \(i)", "back on USB-C after attempt \(i)")); exit(0) }
         sleep(1)
     }
-    print("Rückschalten fehlgeschlagen"); exit(1)
+    print(tr("Rückschalten fehlgeschlagen", "switching back failed")); exit(1)
 }
 
 /// Serialisiert alle DDC-Zugriffe auf einer eigenen Queue (nie auf dem Main-Thread) und sucht den Monitor bei Bedarf neu.
@@ -112,10 +112,10 @@ final class Model: ObservableObject {
             Task { @MainActor in
                 switch result {
                 case .confirmed: self.status = nil
-                case .unconfirmed: self.status = "\(c.name): gesendet, vom Monitor nicht bestätigt"
+                case .unconfirmed: self.status = tr("\(c.name): gesendet, vom Monitor nicht bestätigt", "\(c.name): sent, not confirmed by the monitor")
                 case .rejected(let actual):
                     self.values[c] = before ?? actual ?? old
-                    self.status = "\(c.name): vom Monitor nicht angenommen"
+                    self.status = tr("\(c.name): vom Monitor nicht angenommen", "\(c.name): rejected by the monitor")
                 }
             }
         }
@@ -131,10 +131,10 @@ final class Model: ObservableObject {
             if self.values[.input] == 3, v != 3 {
                 NSApp.activate(ignoringOtherApps: true)
                 let alert = NSAlert()
-                alert.messageText = "Eingang auf \(inputNames[v]) umschalten?"
-                alert.informativeText = "Der Mac verliert das Bild, bis am Monitor wieder USB-C gewählt ist (Monitor-Menü oder Eingangstaste)."
-                alert.addButton(withTitle: "Umschalten")
-                alert.addButton(withTitle: "Abbrechen")
+                alert.messageText = tr("Eingang auf \(inputNames[v]) umschalten?", "Switch input to \(inputNames[v])?")
+                alert.informativeText = tr("Der Mac verliert das Bild, bis am Monitor wieder USB-C gewählt ist (Monitor-Menü oder Eingangstaste).", "The Mac loses the picture until USB-C is selected again on the monitor (monitor menu or input button).")
+                alert.addButton(withTitle: tr("Umschalten", "Switch"))
+                alert.addButton(withTitle: tr("Abbrechen", "Cancel"))
                 guard alert.runModal() == .alertFirstButtonReturn else { return }
             }
             self.set(.input, v)
@@ -155,7 +155,7 @@ struct MenuView: View {
     private func updateAutostart() {
         let st = SMAppService.mainApp.status
         autostart = st == .enabled
-        if st == .requiresApproval { autostartNote = "Freigabe nötig: Systemeinstellungen → Allgemein → Anmeldeobjekte." }
+        if st == .requiresApproval { autostartNote = tr("Freigabe nötig: Systemeinstellungen → Allgemein → Anmeldeobjekte.", "Approval needed: System Settings → General → Login Items.") }
     }
 
     private func setAutostart(_ on: Bool) {
@@ -163,7 +163,7 @@ struct MenuView: View {
         do {
             if on { try SMAppService.mainApp.register() } else { try SMAppService.mainApp.unregister() }
         } catch {
-            autostartNote = "Autostart: \(error.localizedDescription)"
+            autostartNote = tr("Autostart", "Launch at login") + ": \(error.localizedDescription)"
         }
         updateAutostart()
     }
@@ -182,7 +182,7 @@ struct MenuView: View {
     private func picker(_ c: Control, _ names: [String], selection: Binding<Int>? = nil) -> some View {
         let top = model.maxes[c] ?? names.count - 1
         return Picker(c.name, selection: selection ?? model.binding(c)) {
-            ForEach(0...Swift.max(top, 0), id: \.self) { Text($0 < names.count ? names[$0] : "Stufe \($0)").tag($0) }
+            ForEach(0...Swift.max(top, 0), id: \.self) { Text($0 < names.count ? names[$0] : tr("Stufe", "Level") + " \($0)").tag($0) }
         }
         .disabled(model.values[c] == nil)
     }
@@ -196,10 +196,10 @@ struct MenuView: View {
     var body: some View {
         VStack(alignment: .leading, spacing: 8) {
             if model.connected == nil {
-                Text("Suche Monitor …")
+                Text(tr("Suche Monitor …", "Looking for monitor …"))
             } else if model.connected == false {
-                Text("Kein passender Monitor gefunden")
-                Button("Erneut suchen") { model.refresh() }
+                Text(tr("Kein passender Monitor gefunden", "No matching monitor found"))
+                Button(tr("Erneut suchen", "Search again")) { model.refresh() }
             } else {
                 slider(.brightness)
                 slider(.contrast)
@@ -216,12 +216,12 @@ struct MenuView: View {
                 toggle(.aimStabilizer)
                 toggle(.refreshOSD)
                 Divider()
-                Button("Werte neu lesen") { model.refresh() }
+                Button(tr("Werte neu lesen", "Reload values")) { model.refresh() }
                 if let status = model.status { Text(status).font(.caption).foregroundStyle(.secondary) }
             }
-            Toggle("Beim Anmelden starten", isOn: Binding(get: { autostart }, set: setAutostart))
+            Toggle(tr("Beim Anmelden starten", "Launch at login"), isOn: Binding(get: { autostart }, set: setAutostart))
             if let note = autostartNote { Text(note).font(.caption).foregroundStyle(.secondary) }
-            Button("Beenden") { NSApplication.shared.terminate(nil) }
+            Button(tr("Beenden", "Quit")) { NSApplication.shared.terminate(nil) }
         }
         .padding(12)
         .frame(width: 280)
@@ -237,15 +237,15 @@ struct MenuView: View {
     UserDefaults.standard.set(true, forKey: key)
     NSApp.activate(ignoringOtherApps: true)
     let alert = NSAlert()
-    alert.messageText = "MonitorDeck beim Anmelden starten?"
-    alert.informativeText = "Die App legt sich in die Menüleiste. Die Einstellung lässt sich jederzeit im Menü ändern."
-    alert.addButton(withTitle: "Beim Anmelden starten")
-    alert.addButton(withTitle: "Nicht jetzt")
+    alert.messageText = tr("MonitorDeck beim Anmelden starten?", "Launch MonitorDeck at login?")
+    alert.informativeText = tr("Die App legt sich in die Menüleiste. Die Einstellung lässt sich jederzeit im Menü ändern.", "The app lives in the menu bar. You can change this at any time in the menu.")
+    alert.addButton(withTitle: tr("Beim Anmelden starten", "Launch at login"))
+    alert.addButton(withTitle: tr("Nicht jetzt", "Not now"))
     guard alert.runModal() == .alertFirstButtonReturn else { return }
     do { try SMAppService.mainApp.register() } catch {
         let fail = NSAlert()
         fail.alertStyle = .warning
-        fail.messageText = "Autostart konnte nicht eingerichtet werden"
+        fail.messageText = tr("Autostart konnte nicht eingerichtet werden", "Could not set up launch at login")
         fail.informativeText = error.localizedDescription
         fail.runModal()
     }
