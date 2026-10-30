@@ -19,6 +19,7 @@ Belegstufen: **Lesen** = Wert vom Monitor abgefragt und plausibel; **Schreiben**
 | Farbtemperatur | ja | ja | nur Kalt/Normal/Warm benannt; Stufen 3 und 4 ungeprüft |
 | Fadenkreuz, Aim Stabilizer, Refresh-Anzeige | ja | ja | |
 | FreeSync | ja | nicht einzeln geprüft | |
+| Systemwerte im Dashboard | n. a. | ja: CPU-/GPU-Last und SoC-Temperatur alle 2 s; Sichtprüfung am Monitor bestätigt (MacBook Air M5) | Takt/Lüfter nicht lesbar und am Monitor ausgeblendet; Macs mit Lüfter ungeprüft |
 | Autostart beim Anmelden | n. a. | `--autostart on` meldet „an“ | Start nach Neuanmeldung ungeprüft |
 
 ## Nicht im Menü

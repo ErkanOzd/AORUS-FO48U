@@ -41,6 +41,18 @@ public struct Control: Hashable, Sendable {
     public static let nightVision = Control("Night Vision", 0x49)
     public static let pipPbp = Control("PIP/PBP", 0x0E)
     public static let osdSize = Control(tr("OSD-Größe", "OSD Size"), 0x3A)
+    public static let dashboardOn = Control("Dashboard", 0x18)
+}
+
+/// Dashboard-Felder des Monitors (Sub-IDs von `0xE0`): Wert senden unter `value`, Anzeige-Schalter unter `title`.
+public enum DashField: UInt8, CaseIterable, Sendable {
+    case cpuTemp = 0x1A, cpuFreq = 0x1B, cpuFan = 0x1C, cpuLoad = 0x1D
+    case gpuTemp = 0x1E, gpuFreq = 0x1F, gpuFan = 0x20, gpuLoad = 0x21
+
+    /// Anzeige-Schalter („Title“): `0x41`…`0x48` in derselben Reihenfolge.
+    public var title: UInt8 { 0x41 + (rawValue - 0x1A) }
+    /// Maus-DPI (`0x4A`/`0x40`) hat auf dem Mac keine Quelle und bleibt aus.
+    public static let mouseDPITitle: UInt8 = 0x40
 }
 
 public struct Reading: Sendable { public let max: Int; public let current: Int }
@@ -164,5 +176,25 @@ public final class Monitor: @unchecked Sendable {
             actual = r.current
         }
         return .rejected(actual: actual)
+    }
+
+    /// Abstand nach jedem Dashboard-Paket; der Sidekick wartet ebenso 150 ms, ohne Pause erscheint nur das erste Feld [gemessen].
+    private static let dashGap: UInt32 = 150_000
+
+    /// Sendet einen ganzzahligen Wert (Betrag bis 255 999) an ein Dashboard-Feld; kein Rücklesen möglich.
+    @discardableResult
+    public func sendDashboard(_ field: DashField, _ value: Int) -> Bool {
+        let v = min(abs(value), 255_999)
+        let ok = send([0x03, 0xE0, field.rawValue, UInt8(v / 10000), UInt8(v % 10000 / 100), UInt8(v % 100), value < 0 ? 1 : 0])
+        usleep(Self.dashGap)
+        return ok
+    }
+
+    /// Schaltet die Anzeige eines Dashboard-Feldes am Monitor an/aus (Format `03 E0 <Sub> 00 01|00` aus `SetXTitleON/OFF` [Dekompilat]; Zustand nicht lesbar).
+    @discardableResult
+    public func setDashboardTitle(_ sub: UInt8, on: Bool) -> Bool {
+        let ok = send([0x03, 0xE0, sub, 0x00, on ? 1 : 0])
+        usleep(Self.dashGap)
+        return ok
     }
 }
