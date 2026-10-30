@@ -15,7 +15,7 @@ public struct Control: Hashable, Sendable {
     public let name: String
     public let code: UInt8
     public let vendor: Bool
-    public init(_ name: String, _ code: UInt8, vendor: Bool = true) {
+    init(_ name: String, _ code: UInt8, vendor: Bool = true) {
         self.name = name; self.code = code; self.vendor = vendor
     }
 
@@ -92,7 +92,20 @@ public final class Monitor: @unchecked Sendable {
         path = p
     }
 
+    /// Mindestabstand zwischen zwei Nachrichten (DDC/CI verlangt Pausen; Wert empirisch, nicht aus der Spezifikation belegt).
+    private static let gap: UInt64 = 40_000_000
+    private static let paceLock = NSLock()
+    nonisolated(unsafe) private static var lastBus: UInt64 = 0
+
+    private static func pace() {
+        paceLock.lock(); defer { paceLock.unlock() }
+        let now = DispatchTime.now().uptimeNanoseconds
+        if lastBus != 0, now < lastBus + gap { usleep(UInt32((lastBus + gap - now) / 1000)) }
+        lastBus = DispatchTime.now().uptimeNanoseconds
+    }
+
     private static func write(_ s: AVService, _ payload: [UInt8]) -> Bool {
+        pace()
         var pkt: [UInt8] = [UInt8(0x80 | payload.count)] + payload
         var chk: UInt8 = 0x6E ^ 0x51
         for b in pkt { chk ^= b }

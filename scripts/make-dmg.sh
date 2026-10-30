@@ -9,9 +9,9 @@ version=$(/usr/libexec/PlistBuddy -c "Print CFBundleShortVersionString" "dist/Mo
 dmg="dist/MonitorDeck-$version.dmg"
 stage=$(mktemp -d)
 trap 'rm -rf "$stage"' EXIT
-cp -R "dist/MonitorDeck.app" "$stage/"
+ditto "dist/MonitorDeck.app" "$stage/MonitorDeck.app"
 ln -s /Applications "$stage/Applications"
 rm -f "$dmg"
-hdiutil create -volname "MonitorDeck" -srcfolder "$stage" -format UDZO -ov "$dmg" >/dev/null
+hdiutil create -volname "MonitorDeck" -srcfolder "$stage" -format UDZO "$dmg" >/dev/null
 shasum -a 256 "$dmg"
 echo "fertig: $dmg"

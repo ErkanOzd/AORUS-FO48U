@@ -16,7 +16,7 @@ Helligkeit, Kontrast, Lautstärke, Schärfe, Black eQualizer, Bildmodus, Eingang
 
 ## Installation
 
-**Fertiges Image:** `MonitorDeck-<Version>.dmg` von der Releases-Seite laden, öffnen und die App nach „Programme“ ziehen. Die App ist nicht notarisiert: beim ersten Start im Finder Rechtsklick → „Öffnen“ (oder unter Systemeinstellungen → Datenschutz & Sicherheit → „Trotzdem öffnen“).
+**Fertiges Image:** `MonitorDeck-<Version>.dmg` von der Releases-Seite laden, öffnen und die App nach „Programme“ ziehen. Die App ist nicht notarisiert: beim ersten Start unter Systemeinstellungen → Datenschutz & Sicherheit → „Trotzdem öffnen“ wählen (ab macOS 15 ersetzt das den Rechtsklick-Weg; ungeprüft, ob in Ihrer Version zusätzlich `xattr -d com.apple.quarantine` nötig ist).
 
 **Selbst bauen:**
 
@@ -28,32 +28,32 @@ open ~/Applications/"MonitorDeck.app"
 scripts/make-dmg.sh                        # optional: baut dist/MonitorDeck-<Version>.dmg
 ```
 
-Die App ist nicht notarisiert; beim ersten Start ggf. im Finder per Rechtsklick „Öffnen“. Beim ersten Start fragt die App einmalig, ob sie beim Anmelden starten soll. Autostart: Schalter „Beim Anmelden starten“ im Menü oder `FO48UControl --autostart on|off`.
+Die App ist nicht notarisiert; beim ersten Start siehe oben. Beim ersten Start fragt die App einmalig, ob sie beim Anmelden starten soll. Autostart: Schalter „Beim Anmelden starten“ im Menü oder `MonitorDeck.app/Contents/MacOS/MonitorDeck --autostart on|off` (muss aus dem App-Bundle laufen). Nach einem Neubau oder Verschieben der App kann der Eintrag neu gesetzt werden müssen (ungeprüft).
 
-Ohne App-Bundle: `swift build && .build/debug/FO48UControl`.
+Ohne App-Bundle: `swift build && .build/debug/MonitorDeck`.
 
 ## Befehle
 
 | Befehl | Wirkung |
 |---|---|
-| `FO48UControl --selftest` | liest alle Werte (nur lesend) |
-| `FO48UControl --writetest` | schreibt Helligkeit ±10 mit Rücklesen und stellt sie zurück |
-| `FO48UControl --inputtest` | schaltet kurz auf DisplayPort und zurück auf USB-C (Bild fällt kurz aus) |
-| `FO48UControl --autostart [on\|off]` | Anmeldeobjekt setzen oder Status zeigen |
+| `MonitorDeck --selftest` | liest alle Werte (nur lesend) |
+| `MonitorDeck --writetest` | schreibt Helligkeit ±10 mit Rücklesen und stellt sie zurück |
+| `MonitorDeck --inputtest` | schaltet kurz auf DisplayPort und zurück auf USB-C (Bild fällt kurz aus) |
+| `MonitorDeck --autostart [on\|off]` | Anmeldeobjekt setzen oder Status zeigen |
 
 ## Hinweise
 
 - Die App nutzt die **private Apple-API `IOAVService`**. Sie ist nicht App-Store-tauglich und kann mit einem macOS-Update brechen.
 - Der Eingangswechsel auf HDMI/DisplayPort nimmt dem Mac das Bild, bis wieder USB-C gewählt ist.
 - Es werden nur die hier dokumentierten Befehle gesendet. Firmware-Flash-Funktionen des Herstellers sind bewusst nicht umgesetzt.
-- Getestet nur mit **einem AORUS FO48U** (Firmware F06) per USB-C an einem Apple-Silicon-Mac. Andere Monitore und Mac-Modelle sind ungeprüft; Details in [`docs/FUNKTIONEN.md`](docs/FUNKTIONEN.md).
+- Getestet nur mit **einem AORUS FO48U** (Firmware vermutlich F06, Deutung) per USB-C an einem Apple-Silicon-Mac. Andere Monitore und Mac-Modelle sind ungeprüft; Details in [`docs/FUNKTIONEN.md`](docs/FUNKTIONEN.md).
 - Eagle Eye und Night Vision fehlen im Menü: Der Monitor beantwortet diese Abfragen nicht (siehe `docs/FUNKTIONEN.md`).
 
 ## Testen mit anderen AORUS-Monitoren
 
 Andere AORUS-Modelle (z. B. FO32U2, FI32U, FI27Q) nutzen vermutlich dasselbe DDC/CI-Protokoll, belegt ist das nicht. Wer einen testen möchte, ist willkommen:
 
-1. App bauen, dann `FO48UControl --selftest` ausführen (nur lesend).
+1. App bauen, dann `MonitorDeck --selftest` ausführen (nur lesend).
 2. Ein Issue eröffnen mit: Monitormodell, Firmware, Anschluss (USB-C, HDMI, DisplayPort), Mac-Modell, macOS-Version und der Ausgabe von `--selftest`. Keine Seriennummern posten.
 3. Optional `--writetest` (Helligkeit ±10, stellt zurück) und melden, welche Menüelemente wirken.
 

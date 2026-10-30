@@ -1,4 +1,4 @@
-// Rein lesender DDC/CI-Probe (Get VCP) über IOAVService (Apple Silicon, DP-Alt-Mode).
+// DDC/CI-Probe (Get VCP; `settest` schreibt, nur für Sub-IDs aus docs/PROTOKOLL.md) über IOAVService (Apple Silicon, DP-Alt-Mode).
 import Foundation
 import IOKit
 
@@ -55,15 +55,20 @@ guard let s = list.first else { print("kein externer AVService"); exit(1) }
 if args.count >= 4 && args[1] == "settest" {
     // settest <sub|vcp> <wert>: schreibt Wert, liest zurück, stellt den alten Wert wieder her
     let isE0 = args[2].hasPrefix("E0/")
-    let id = UInt8(args[2].replacingOccurrences(of: "E0/", with: ""), radix: 16)!
-    let neu = UInt8(args[3])!
+    // Nur Sub-IDs mit belegter Wirkung (docs/PROTOKOLL.md); alles andere könnte Firmware-Funktionen auslösen.
+    let erlaubtE0: Set<UInt8> = [0x02, 0x03, 0x07, 0x09, 0x0A, 0x0C, 0x22, 0x2C, 0x2D, 0x37]
+    let erlaubtStd: Set<UInt8> = [0x10, 0x12, 0x62, 0x87]
+    guard let id = UInt8(args[2].replacingOccurrences(of: "E0/", with: ""), radix: 16),
+          let neu = UInt8(args[3]), isE0 ? erlaubtE0.contains(id) : erlaubtStd.contains(id) else {
+        print("settest: Kennung nicht erlaubt oder Wert ungültig"); exit(2)
+    }
     let q: [UInt8] = isE0 ? [0x01, 0xE0, id] : [0x01, id]
     let w: (UInt8) -> [UInt8] = { isE0 ? [0x03, 0xE0, id, 0x00, $0] : [0x03, id, 0x00, $0] }
     let alt = cur(query(s, q)); print("alt:", alt as Any)
     guard let a = alt else { exit(2) }
     print("setze \(neu):", set(s, w(neu))); usleep(300_000)
     print("zurückgelesen:", cur(query(s, q)) as Any)
-    print("restore \(a):", set(s, w(UInt8(a)))); usleep(300_000)
+    print("restore \(a):", set(s, w(UInt8(truncatingIfNeeded: a)))); usleep(300_000)
     print("nach restore:", cur(query(s, q)) as Any)
     exit(0)
 }

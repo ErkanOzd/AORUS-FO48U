@@ -1,6 +1,6 @@
 # Sidekick-Protokoll (AORUS FO48U)
 
-Belegetiketten: **[Dekompilat]** aus GCC 26.09.10.01 / Sidekick 26.08.04.01 (`_analyse/decomp`, `RTKCmd_x64.dll`, `RtHIDlib.dll`), **[gemessen]** am Mac mit `_analyse/poc/ddcprobe.swift` (nur lesend, 2026-10-30), **[ungeprüft]** weder gemessen noch belegt.
+Belegetiketten: **[Dekompilat]** aus GCC 26.09.10.01 / Sidekick 26.08.04.01 (lokal erzeugt unter `_analyse/decomp`, nicht im Repo; `RTKCmd_x64.dll`, `RtHIDlib.dll`), **[gemessen]** am Mac mit `_analyse/poc/ddcprobe.swift` (2026-10-30; `settest` schreibt), **[ungeprüft]** weder gemessen noch belegt.
 
 ## Kernaussage
 Der Sidekick steuert den FO48U per DDC/CI (I²C-Adresse `0x6E`, Quelle `0x51`). Unter Windows läuft das über ein Realtek-USB-HID-Gerät (VID `0x0BDA`, PID `0x1100`, Vendor-Usage-Page `0xFFDA`, 192-Byte-Reports ohne Report-ID) [Dekompilat; HID-Gerät am Mac per `ioreg` sichtbar]. Am Mac braucht es das nicht: DDC/CI über die DisplayPort-Verbindung (`IOAVService`, Chip `0x37`, Offset `0x51`) beantwortet dieselben Befehle [gemessen].
@@ -13,7 +13,7 @@ Paket Mac-Seite (`IOAVServiceWriteI2C`, Chip `0x37`, Offset `0x51`): `[0x80|n, P
 | Standard-VCP lesen | `01 <vcp>` |
 | Standard-VCP setzen | `03 <vcp> 00 <wert>` |
 | Herstellerspezifisch lesen | `01 E0 <sub>` |
-| Herstellerspezifisch setzen | `03 E0 <sub> 00 <wert>` [Dekompilat; Schreiben ungeprüft] |
+| Herstellerspezifisch setzen | `03 E0 <sub> 00 <wert>` [Dekompilat; Schreiben gemessen, siehe „Schreiben samt Rücklesen“] |
 
 Antwort (`6E 88 02 00 <vcp> <typ|sub> <maxHi> <maxLo> <curHi> <curLo> <chk>`): Beispiel Helligkeit `… 10 00 00 64 00 4B` = Maximum 100, aktuell 75 [gemessen]. Bei `0xE0` steht die Sub-ID an der Typ-Stelle; die Lesart `max`/`cur` ist aus den Messwerten abgeleitet, nicht aus dem Code belegt (Firmware `0x38` liefert `FF FF 46 06`, Deutung siehe Tabelle `0x38`).
 
@@ -34,7 +34,7 @@ Unterschied Windows-Pfad: Im Dekompilat der HID-Variante wird die Prüfsumme ohn
 | `E0/2C` | Bildmodus | 9 | 4 |
 | `E0/0C` | FreeSync | 1 | 0 |
 
-`m1ddc display 2 get …` bestätigt Helligkeit 75, Kontrast 60, Eingang 16, Lautstärke 8 [gemessen].
+`m1ddc display 2 get …` bestätigt Helligkeit 75, Kontrast 60, Eingang 16, Lautstärke 8 [gemessen]. `m1ddc` zeigt für USB-C den Rohwert 16, der Herstellerbefehl `E0/2D` liefert 3; die Zuordnung ist nicht weiter untersucht.
 
 ## Schreiben und Werte
 Schreiben getestet (Helligkeit 75→80→75, OverDrive 0→1→0, jeweils zurückgelesen und wiederhergestellt) [gemessen]. Die Windows-Pakete tragen als letztes Byte die Prüfsumme ohne `0x6E` (`51^85^03^E0^sub^00^wert`); am Mac gilt die Standardform mit `0x6E` [Dekompilat / gemessen].

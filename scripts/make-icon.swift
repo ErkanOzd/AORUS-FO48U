@@ -59,7 +59,7 @@ func render(_ px: Int) -> Data {
     return rep.representation(using: .png, properties: [:])!
 }
 
-let out = CommandLine.arguments.dropFirst().first ?? "AppIcon.icns"
+let out = CommandLine.arguments.dropFirst().first ?? "Resources/AppIcon.icns"
 let dir = NSTemporaryDirectory() + "AppIcon-\(getpid()).iconset"
 try? FileManager.default.removeItem(atPath: dir)
 try FileManager.default.createDirectory(atPath: dir, withIntermediateDirectories: true)
@@ -74,3 +74,4 @@ try? FileManager.default.removeItem(atPath: dir)
 // Vorschau (nur bei Bedarf): PNG in 1024 neben die icns legen
 if CommandLine.arguments.count > 2 { try render(1024).write(to: URL(fileURLWithPath: CommandLine.arguments[2])) }
 print("geschrieben:", out, p.terminationStatus == 0 ? "ok" : "Fehler")
+exit(p.terminationStatus)

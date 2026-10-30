@@ -9,7 +9,7 @@
 
 ## Befehle
 - Archivinhalt prüfen: `unzip -l GCC_26.09.10.01.zip`
-- App bauen: `swift build`; App-Bundle: `scripts/build-app.sh` (nach `dist/`); Installer-Image: `scripts/make-dmg.sh`; Selbsttest am Monitor: `.build/debug/FO48UControl --selftest`; Schreibtest (Helligkeit ±10 mit Rücklesen, stellt zurück): `--writetest`; Quellenwechsel-Test (Bild fällt kurz aus): `--inputtest`; App: `.build/debug/FO48UControl`
+- App bauen: `swift build`; App-Bundle: `scripts/build-app.sh` (nach `dist/`); Installer-Image: `scripts/make-dmg.sh`; Selbsttest am Monitor: `.build/debug/MonitorDeck --selftest`; Schreibtest (Helligkeit ±10 mit Rücklesen, stellt zurück): `--writetest`; Quellenwechsel-Test (Bild fällt kurz aus): `--inputtest`; App: `.build/debug/MonitorDeck`
 - Probe bauen/starten (nur lesend): `swiftc -O _analyse/poc/ddcprobe.swift -o _analyse/poc/ddcprobe -framework IOKit && _analyse/poc/ddcprobe`
 - Monitor schnell prüfen: `m1ddc display 2 get luminance`
 - Analyse-Werkzeuge (Homebrew): `sevenzip` (`7zz`), `dotnet` + `ilspycmd` (`~/.dotnet/tools`, `DOTNET_ROOT=/opt/homebrew/opt/dotnet/libexec`), `radare2`, `m1ddc`
@@ -17,14 +17,14 @@
 ## Struktur
 - `GCC_26.09.10.01.zip` — Installer GIGABYTE Control Center, Version 26.09.10.01
 - `scripts/build-app.sh` — baut `dist/MonitorDeck.app`; `scripts/make-dmg.sh` — `.dmg` mit Applications-Link; `scripts/make-icon.swift` — zeichnet `Resources/AppIcon.icns`; `LICENSE` (MIT)
-- `Package.swift`, `Sources/FO48UKit` (DDC-Schicht), `Sources/FO48UControl` (Menüleisten-App)
+- `Package.swift`, `Sources/FO48UKit` (DDC-Schicht), `Sources/MonitorDeck` (Menüleisten-App)
 - `docs/PROTOKOLL.md` — DDC/CI-Protokoll, Sub-IDs, Messwerte (Quelle der Wahrheit für Befehle)
 - `_analyse/poc/` — Swift-Proof-of-Concept; `_analyse/meta/` — Geräte-/Konfigurationsdateien aus dem Installer; `_analyse/sidekick/`, `_analyse/decomp/` — entpackte Binaries und Dekompilate (nicht im Repo)
 - `README.md` — Kurzüberblick; `docs/FUNKTIONEN.md` — Funktionsumfang und Prüfstand (ein Monitor)
 - `STATUS.md` — aktueller Stand und nächste Schritte
 
 ## Definition of Done
-- Laufzeit-Smoketest nach Änderungen am DDC-Code: `swift build && .build/debug/FO48UControl --selftest` (Monitor am USB-C, Werte plausibel).
+- Laufzeit-Smoketest nach Änderungen am DDC-Code: `swift build && .build/debug/MonitorDeck --selftest` (Monitor am USB-C, Werte plausibel).
 - Aussagen zu Monitor-Funktionen, Firmware oder Kompatibilität nur mit Quelle (Herstellerseite, Handbuch, eigener Test); sonst „ungeprüft“.
 - Verifikationsregeln: siehe globale `CLAUDE.md`, Abschnitt „Verifikation & Sorgfalt“.
 - Commit-Texte Englisch, Quelle: `session-closer`.
