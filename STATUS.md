@@ -26,7 +26,7 @@
 - Menü neu: Schärfe, Farbtemperatur, Fadenkreuz, Aim Stabilizer, Refresh-Anzeige; Schreiben mit Rücklesen am Monitor belegt. Eagle Eye/Night Vision nicht im Menü (Monitor beantwortet die Abfrage nicht, siehe `docs/PROTOKOLL.md`). PIP/PBP, OSD-Größe, KVM bewusst nicht aufgenommen (ungeprüft).
 - Entpackte Gigabyte-Dateien (ca. 1,7 GB) gelöscht, `_analyse/sidekick` (96 MB) bleibt; alles aus dem ZIP reproduzierbar. Keine Windows-VM nötig gewesen.
 
-- Review-Blocker behoben (2026-10-30): Zielmonitor-Wahl mit Pfad-Bindung bei Neu-Suche (K1, nur mit einem Monitor getestet), DDC auf eigener Queue und Slider schreiben beim Loslassen (K2), `WriteResult` statt „Erfolg bei fehlendem Rücklesen“ (H1), Antwortprüfung auf Sub-ID und Prüfsumme (H2). `--writetest` und `--inputtest` liefen erfolgreich; Slider-Ziehen in der UI unverifiziert. Offen aus dem Review: Mittel- und Niedrig-Befunde.
+- Review-Blocker behoben (2026-10-30): Zielmonitor-Wahl mit Pfad-Bindung bei Neu-Suche (K1, nur mit einem Monitor getestet), DDC auf eigener Queue und Slider schreiben beim Loslassen (K2), `WriteResult` statt „Erfolg bei fehlendem Rücklesen“ (H1), Antwortprüfung auf Sub-ID und Prüfsumme (H2). `--writetest` und `--inputtest` liefen erfolgreich; Slider-Ziehen in der UI vom Nutzer bestätigt („Regler funktionieren“, 2026-10-30). Offen aus dem Review: Mittel- und Niedrig-Befunde.
 - App umbenannt in „MonitorDeck“ (generischer, vermeidet „Sidekick“ als Gigabyte-Produktname); Executable, Swift-Targets, Bundle-ID und Repo-Name unverändert. `docs/FUNKTIONEN.md` legt Funktionsumfang und Prüfstand offen; README lädt zum Testen mit anderen AORUS-Modellen ein.
 
 ## Nächste Schritte (priorisiert)
