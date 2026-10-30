@@ -16,11 +16,11 @@
 
 ## Struktur
 - `GCC_26.09.10.01.zip` — Installer GIGABYTE Control Center, Version 26.09.10.01
-- `scripts/build-app.sh` — baut `dist/FO48U Control.app`; `scripts/make-dmg.sh` — `.dmg` mit Applications-Link; `scripts/make-icon.swift` — zeichnet `Resources/AppIcon.icns`; `LICENSE` (MIT)
+- `scripts/build-app.sh` — baut `dist/MonitorDeck.app`; `scripts/make-dmg.sh` — `.dmg` mit Applications-Link; `scripts/make-icon.swift` — zeichnet `Resources/AppIcon.icns`; `LICENSE` (MIT)
 - `Package.swift`, `Sources/FO48UKit` (DDC-Schicht), `Sources/FO48UControl` (Menüleisten-App)
 - `docs/PROTOKOLL.md` — DDC/CI-Protokoll, Sub-IDs, Messwerte (Quelle der Wahrheit für Befehle)
 - `_analyse/poc/` — Swift-Proof-of-Concept; `_analyse/meta/` — Geräte-/Konfigurationsdateien aus dem Installer; `_analyse/sidekick/`, `_analyse/decomp/` — entpackte Binaries und Dekompilate (nicht im Repo)
-- `README.md` — Kurzüberblick
+- `README.md` — Kurzüberblick; `docs/FUNKTIONEN.md` — Funktionsumfang und Prüfstand (ein Monitor)
 - `STATUS.md` — aktueller Stand und nächste Schritte
 
 ## Definition of Done

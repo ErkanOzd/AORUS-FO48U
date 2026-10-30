@@ -1,4 +1,4 @@
-# FO48U Control
+# MonitorDeck
 
 Menüleisten-App für macOS (Apple Silicon), die den **Gigabyte AORUS FO48U** per DDC/CI steuert, als Ersatz für den Windows-only „OSD Sidekick“. *English: a macOS menu bar app that controls the Gigabyte AORUS FO48U monitor over DDC/CI, replacing the Windows-only OSD Sidekick.*
 
@@ -16,16 +16,16 @@ Helligkeit, Kontrast, Lautstärke, Schärfe, Black eQualizer, Bildmodus, Eingang
 
 ## Installation
 
-**Fertiges Image:** `FO48U-Control-<Version>.dmg` von der Releases-Seite laden, öffnen und die App nach „Programme“ ziehen. Die App ist nicht notarisiert: beim ersten Start im Finder Rechtsklick → „Öffnen“ (oder unter Systemeinstellungen → Datenschutz & Sicherheit → „Trotzdem öffnen“).
+**Fertiges Image:** `MonitorDeck-<Version>.dmg` von der Releases-Seite laden, öffnen und die App nach „Programme“ ziehen. Die App ist nicht notarisiert: beim ersten Start im Finder Rechtsklick → „Öffnen“ (oder unter Systemeinstellungen → Datenschutz & Sicherheit → „Trotzdem öffnen“).
 
 **Selbst bauen:**
 
 ```sh
 git clone https://github.com/ErkanOzd/AORUS-FO48U.git && cd AORUS-FO48U
-scripts/build-app.sh                       # baut dist/FO48U Control.app (ad-hoc signiert)
-cp -R "dist/FO48U Control.app" ~/Applications/
-open ~/Applications/"FO48U Control.app"
-scripts/make-dmg.sh                        # optional: baut dist/FO48U-Control-<Version>.dmg
+scripts/build-app.sh                       # baut dist/MonitorDeck.app (ad-hoc signiert)
+cp -R "dist/MonitorDeck.app" ~/Applications/
+open ~/Applications/"MonitorDeck.app"
+scripts/make-dmg.sh                        # optional: baut dist/MonitorDeck-<Version>.dmg
 ```
 
 Die App ist nicht notarisiert; beim ersten Start ggf. im Finder per Rechtsklick „Öffnen“. Beim ersten Start fragt die App einmalig, ob sie beim Anmelden starten soll. Autostart: Schalter „Beim Anmelden starten“ im Menü oder `FO48UControl --autostart on|off`.
@@ -46,11 +46,22 @@ Ohne App-Bundle: `swift build && .build/debug/FO48UControl`.
 - Die App nutzt die **private Apple-API `IOAVService`**. Sie ist nicht App-Store-tauglich und kann mit einem macOS-Update brechen.
 - Der Eingangswechsel auf HDMI/DisplayPort nimmt dem Mac das Bild, bis wieder USB-C gewählt ist.
 - Es werden nur die hier dokumentierten Befehle gesendet. Firmware-Flash-Funktionen des Herstellers sind bewusst nicht umgesetzt.
-- Getestet nur mit einem FO48U (Firmware F06, Deutung siehe Protokoll) an einem Apple-Silicon-Mac. Andere Monitore und Mac-Modelle sind ungeprüft.
+- Getestet nur mit **einem AORUS FO48U** (Firmware F06) per USB-C an einem Apple-Silicon-Mac. Andere Monitore und Mac-Modelle sind ungeprüft; Details in [`docs/FUNKTIONEN.md`](docs/FUNKTIONEN.md).
 - Eagle Eye und Night Vision werden vom Monitor nicht angenommen und fehlen deshalb im Menü.
+
+## Testen mit anderen AORUS-Monitoren
+
+Andere AORUS-Modelle (z. B. FO32U2, FI32U, FI27Q) nutzen vermutlich dasselbe DDC/CI-Protokoll, belegt ist das nicht. Wer einen testen möchte, ist willkommen:
+
+1. App bauen, dann `FO48UControl --selftest` ausführen (nur lesend).
+2. Ein Issue eröffnen mit: Monitormodell, Firmware, Anschluss (USB-C, HDMI, DisplayPort), Mac-Modell, macOS-Version und der Ausgabe von `--selftest`. Keine Seriennummern posten.
+3. Optional `--writetest` (Helligkeit ±10, stellt zurück) und melden, welche Menüelemente wirken.
+
+Schreibende Befehle gehen auf eigene Gefahr; Firmware-Funktionen werden nie gesendet.
 
 ## Dokumentation
 
+- [`docs/FUNKTIONEN.md`](docs/FUNKTIONEN.md): was funktioniert, was nicht, was belegt ist
 - [`docs/PROTOKOLL.md`](docs/PROTOKOLL.md): DDC/CI-Protokoll, Sub-IDs, Messwerte, Belegstufen (`[Dekompilat]`, `[gemessen]`, `[ungeprüft]`)
 - [`STATUS.md`](STATUS.md): Stand, Entscheidungen, nächste Schritte
 - [`CLAUDE.md`](CLAUDE.md): Projektregeln für die Arbeit mit Claude Code

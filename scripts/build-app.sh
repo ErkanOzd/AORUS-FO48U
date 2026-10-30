@@ -1,9 +1,9 @@
 #!/bin/sh
-# Baut "FO48U Control.app" (Release, ad-hoc signiert) nach dist/.
+# Baut "MonitorDeck.app" (Release, ad-hoc signiert) nach dist/.
 # Aufruf: scripts/build-app.sh
 set -eu
 root=$(cd "$(dirname "$0")/.." && pwd)
-app="$root/dist/FO48U Control.app"
+app="$root/dist/MonitorDeck.app"
 cd "$root"
 swift build -c release
 rm -rf "$app"
@@ -16,7 +16,7 @@ cat > "$app/Contents/Info.plist" <<PLIST
 <plist version="1.0">
 <dict>
   <key>CFBundleIdentifier</key><string>io.github.erkanozd.fo48ucontrol</string>
-  <key>CFBundleName</key><string>FO48U Control</string>
+  <key>CFBundleName</key><string>MonitorDeck</string>
   <key>CFBundleIconFile</key><string>AppIcon</string>
   <key>CFBundleExecutable</key><string>FO48UControl</string>
   <key>CFBundlePackageType</key><string>APPL</string>

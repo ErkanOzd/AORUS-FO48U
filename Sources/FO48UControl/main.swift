@@ -136,7 +136,7 @@ struct MenuView: View {
     UserDefaults.standard.set(true, forKey: key)
     NSApp.activate(ignoringOtherApps: true)
     let alert = NSAlert()
-    alert.messageText = "FO48U Control beim Anmelden starten?"
+    alert.messageText = "MonitorDeck beim Anmelden starten?"
     alert.informativeText = "Die App legt sich in die Menüleiste. Die Einstellung lässt sich jederzeit im Menü ändern."
     alert.addButton(withTitle: "Beim Anmelden starten")
     alert.addButton(withTitle: "Nicht jetzt")
