@@ -1,5 +1,7 @@
 # MonitorDeck
 
+*English version: [`README.en.md`](README.en.md)*
+
 Menüleisten-App für macOS (Apple Silicon), die den **Gigabyte AORUS FO48U** per DDC/CI steuert, als Ersatz für den Windows-only „OSD Sidekick“. *English: a macOS menu bar app that controls the Gigabyte AORUS FO48U monitor over DDC/CI, replacing the Windows-only OSD Sidekick.*
 
 > **Beta (0.1.x):** Funktionsumfang weitgehend vollständig, aber nur mit einem Monitor und einem Mac getestet.
@@ -10,7 +12,7 @@ Menüleisten-App für macOS (Apple Silicon), die den **Gigabyte AORUS FO48U** pe
 
 Helligkeit, Kontrast, Lautstärke, Schärfe, Black eQualizer, Bildmodus, Eingang, OverDrive, Gamma, Farbtemperatur, Fadenkreuz, FreeSync, Aim Stabilizer, Refresh-Anzeige, Autostart beim Anmelden. Jeder Schreibvorgang wird zurückgelesen und bis zu dreimal wiederholt; zeigt der Monitor einen anderen Wert, übernimmt die Anzeige den gemeldeten Wert und weist darauf hin. Nach einem Eingangswechsel sucht die App den DDC-Dienst am selben Anschluss neu. Schieberegler schreiben erst beim Loslassen; der DDC-Zugriff läuft nicht auf dem Main-Thread. Bei mehreren externen Monitoren wählt die App den, der Helligkeit, Eingang und Bildmodus beantwortet (Heuristik).
 
-Die Oberfläche ist zweisprachig: Deutsch bei deutscher Systemsprache, sonst Englisch (*the UI is German on a German system, English otherwise*). Die README-Texte sind Deutsch.
+Die Oberfläche ist zweisprachig: Deutsch bei deutscher Systemsprache, sonst Englisch (*the UI is German on a German system, English otherwise*). Die README gibt es auf Deutsch und Englisch ([`README.en.md`](README.en.md)); die Dokumente unter `docs/` sind Deutsch.
 
 ## Voraussetzungen
 

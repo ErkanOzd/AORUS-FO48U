@@ -2,7 +2,7 @@
 # Baut "MonitorDeck.app" (Release, ad-hoc signiert) nach dist/.
 # Aufruf: scripts/build-app.sh
 set -eu
-version=0.1.0
+version=0.1.1
 root=$(cd "$(dirname "$0")/.." && pwd)
 app="$root/dist/MonitorDeck.app"
 cd "$root"
