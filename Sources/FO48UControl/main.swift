@@ -128,7 +128,23 @@ struct MenuView: View {
     }
 }
 
+/// Einmalige Abfrage beim ersten Start des App-Bundles, ob die App beim Anmelden starten soll.
+@MainActor func askAutostartOnce() {
+    let key = "autostartAsked"
+    guard Bundle.main.bundleIdentifier != nil, !UserDefaults.standard.bool(forKey: key),
+          SMAppService.mainApp.status == .notRegistered else { return }
+    UserDefaults.standard.set(true, forKey: key)
+    NSApp.activate(ignoringOtherApps: true)
+    let alert = NSAlert()
+    alert.messageText = "FO48U Control beim Anmelden starten?"
+    alert.informativeText = "Die App legt sich in die Menüleiste. Die Einstellung lässt sich jederzeit im Menü ändern."
+    alert.addButton(withTitle: "Beim Anmelden starten")
+    alert.addButton(withTitle: "Nicht jetzt")
+    if alert.runModal() == .alertFirstButtonReturn { try? SMAppService.mainApp.register() }
+}
+
 struct FO48UApp: App {
+    init() { DispatchQueue.main.async { askAutostartOnce() } }
     var body: some Scene {
         MenuBarExtra("FO48U", systemImage: "display") { MenuView() }
             .menuBarExtraStyle(.window)

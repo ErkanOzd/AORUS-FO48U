@@ -28,7 +28,7 @@ open ~/Applications/"FO48U Control.app"
 scripts/make-dmg.sh                        # optional: baut dist/FO48U-Control-<Version>.dmg
 ```
 
-Die App ist nicht notarisiert; beim ersten Start ggf. im Finder per Rechtsklick „Öffnen“. Autostart: Schalter „Beim Anmelden starten“ im Menü oder `FO48UControl --autostart on|off`.
+Die App ist nicht notarisiert; beim ersten Start ggf. im Finder per Rechtsklick „Öffnen“. Beim ersten Start fragt die App einmalig, ob sie beim Anmelden starten soll. Autostart: Schalter „Beim Anmelden starten“ im Menü oder `FO48UControl --autostart on|off`.
 
 Ohne App-Bundle: `swift build && .build/debug/FO48UControl`.
 
