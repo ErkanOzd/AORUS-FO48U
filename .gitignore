@@ -1,0 +1,13 @@
+.DS_Store
+*.zip
+*.exe
+# Gigabyte-Binaries und Dekompilate (urheberrechtlich, reproduzierbar aus dem ZIP)
+_analyse/sidekick/
+_analyse/decomp/
+_analyse/poc/ddcprobe
+.build/
+.swiftpm/
+# Proprietäre Konfigurationsdateien aus dem Gigabyte-Installer
+_analyse/meta/
+_analyse/poc/ddcprobe_dbg.dSYM/
+dist/
