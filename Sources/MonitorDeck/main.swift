@@ -153,6 +153,7 @@ final class Model: ObservableObject {
 struct MenuView: View {
     @StateObject private var model = Model()
     @ObservedObject private var feeder = Feeder.shared
+    @ObservedObject private var keys = MediaKeys.shared
     @State private var autostart = SMAppService.mainApp.status == .enabled
     @State private var autostartNote: String?
 
@@ -222,6 +223,8 @@ struct MenuView: View {
                 Divider()
                 Toggle(tr("Systemwerte im Dashboard", "System stats on dashboard"), isOn: Binding(get: { feeder.enabled }, set: { $0 ? feeder.start() : feeder.stop() }))
                 if let note = feeder.note { Text(note).font(.caption).foregroundStyle(.secondary) }
+                Toggle(tr("Tasten steuern Monitor", "Keys control monitor"), isOn: Binding(get: { keys.enabled }, set: { $0 ? keys.start() : keys.stop() }))
+                if let note = keys.note { Text(note).font(.caption).foregroundStyle(.secondary) }
                 Button(tr("Werte neu lesen", "Reload values")) { model.refresh() }
                 if let status = model.status { Text(status).font(.caption).foregroundStyle(.secondary) }
             }
@@ -258,7 +261,7 @@ struct MenuView: View {
 }
 
 struct FO48UApp: App {
-    init() { DispatchQueue.main.async { askAutostartOnce(); if Feeder.shared.enabled { Feeder.shared.start() } } }
+    init() { DispatchQueue.main.async { askAutostartOnce(); if Feeder.shared.enabled { Feeder.shared.start() }; if MediaKeys.shared.enabled { MediaKeys.shared.start() } } }
     var body: some Scene {
         MenuBarExtra("MonitorDeck", systemImage: "display") { MenuView() }
             .menuBarExtraStyle(.window)

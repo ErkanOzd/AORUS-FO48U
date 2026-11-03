@@ -8,7 +8,7 @@ A macOS menu bar app (Apple Silicon) that controls the **Gigabyte AORUS FO48U** 
 
 ## Features
 
-Brightness, contrast, volume, sharpness, Black eQualizer, picture mode, input, OverDrive, gamma, color temperature, crosshair, FreeSync, Aim Stabilizer, refresh rate OSD, launch at login. Every write is read back and retried up to three times; if the monitor reports a different value, the UI shows the reported value and says so. After an input switch the app looks for the DDC service again on the same port. Sliders write only when released; DDC access never runs on the main thread. With several external monitors the app picks the one that answers brightness, input and picture mode (heuristic).
+Brightness, contrast, volume, sharpness, Black eQualizer, picture mode, input, OverDrive, gamma, color temperature, crosshair, FreeSync, Aim Stabilizer, refresh rate OSD, system stats on the monitor's dashboard, brightness and volume keys (when the mouse pointer is on the monitor; needs the Accessibility permission), launch at login. Every write is read back and retried up to three times; if the monitor reports a different value, the UI shows the reported value and says so. After an input switch the app looks for the DDC service again on the same port. Sliders write only when released; DDC access never runs on the main thread. With several external monitors the app picks the one that answers brightness, input and picture mode (heuristic).
 
 The UI is German on a German system and English otherwise.
 

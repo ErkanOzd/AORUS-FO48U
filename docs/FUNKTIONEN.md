@@ -20,6 +20,7 @@ Belegstufen: **Lesen** = Wert vom Monitor abgefragt und plausibel; **Schreiben**
 | Fadenkreuz, Aim Stabilizer, Refresh-Anzeige | ja | ja | |
 | FreeSync | ja | nicht einzeln geprüft | |
 | Systemwerte im Dashboard | n. a. | ja: CPU-/GPU-Last und SoC-Temperatur alle 2 s; Sichtprüfung am Monitor bestätigt (MacBook Air M5) | Takt/Lüfter nicht lesbar und am Monitor ausgeblendet; Macs mit Lüfter ungeprüft |
+| Tasten steuern Monitor | n. a. | ja: Helligkeits- und Lautstärketasten (±5, Stumm = 0 und zurück), nur wenn der Mauszeiger auf dem Monitor steht; mit echten Tasten bestätigt (MacBook Air, ein FO48U) | Berechtigung „Bedienungshilfen“ nötig; Stumm-Wiederherstellung und Notebook-Display-Verhalten nicht einzeln geprüft; die Berechtigung muss nach jedem Neubau der ad-hoc-signierten App neu erteilt werden |
 | Autostart beim Anmelden | n. a. | `--autostart on` meldet „an“ | Start nach Neuanmeldung ungeprüft |
 
 ## Nicht im Menü
