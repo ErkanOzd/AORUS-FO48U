@@ -8,18 +8,23 @@ import FO48UKit
 final class MediaKeys: ObservableObject {
     static let shared = MediaKeys()
     private static let key = "mediaKeysEnabled"
-    private static let stepKey = "mediaKeysStep"
+    private static let brightnessStepKey = "mediaKeysBrightnessStep"
+    private static let volumeStepKey = "mediaKeysVolumeStep"
+    /// Gespeicherten Wert lesen (übernimmt den früheren gemeinsamen Schlüssel), auf 1–10 begrenzen, Standard 5.
+    private static func storedStep(_ key: String) -> Int {
+        let d = UserDefaults.standard
+        let v = d.integer(forKey: key) != 0 ? d.integer(forKey: key) : d.integer(forKey: "mediaKeysStep")
+        return v == 0 ? 5 : min(max(v, 1), 10)
+    }
     private static let fKeysKey = "mediaKeysBrightnessF"
     /// EISA-Herstellerkennung „GBT“ (Gigabyte): (7<<10)|(2<<5)|20.
     private static let vendor: UInt32 = 7252
 
     @Published private(set) var enabled = UserDefaults.standard.bool(forKey: MediaKeys.key)
     @Published private(set) var note: String?
-    /// Schrittweite pro Tastendruck (1–20, Standard 5).
-    @Published var step: Int = {
-        let v = UserDefaults.standard.integer(forKey: MediaKeys.stepKey)
-        return v == 0 ? 5 : min(max(v, 1), 20)
-    }() { didSet { UserDefaults.standard.set(step, forKey: Self.stepKey) } }
+    /// Schrittweite pro Tastendruck (1–10, Standard 5), getrennt für Helligkeit und Lautstärke.
+    @Published var brightnessStep = MediaKeys.storedStep(MediaKeys.brightnessStepKey) { didSet { UserDefaults.standard.set(brightnessStep, forKey: Self.brightnessStepKey) } }
+    @Published var volumeStep = MediaKeys.storedStep(MediaKeys.volumeStepKey) { didSet { UserDefaults.standard.set(volumeStep, forKey: Self.volumeStepKey) } }
     /// `true`: Helligkeit über F14/F15 (so liefert sie die Tastatur am Test-Mac [gemessen]); `false`: über Medientasten (Nx-Ereignis).
     @Published var brightnessViaF: Bool = UserDefaults.standard.object(forKey: MediaKeys.fKeysKey) as? Bool ?? true {
         didSet { UserDefaults.standard.set(brightnessViaF, forKey: Self.fKeysKey) }
@@ -85,8 +90,15 @@ final class MediaKeys: ObservableObject {
         guard let code = Code(rawValue: (data & 0xFFFF0000) >> 16), onMonitor() else { return false }
         if brightnessViaF, code == .brightnessUp || code == .brightnessDown { return false }
         // Nur Tastendruck (0xA) auslösen, Loslassen aber ebenfalls verschlucken.
-        if (flags & 0xFF00) >> 8 == 0xA { KeyJobs.shared.add(code == .mute ? .mute : (code == .soundUp || code == .soundDown ? .volume : .brightness),
-                                                            delta: code == .soundUp || code == .brightnessUp ? step : (code == .mute ? 0 : -step)) }
+        if (flags & 0xFF00) >> 8 == 0xA {
+            switch code {
+            case .mute: KeyJobs.shared.add(.mute, delta: 0)
+            case .soundUp: KeyJobs.shared.add(.volume, delta: volumeStep)
+            case .soundDown: KeyJobs.shared.add(.volume, delta: -volumeStep)
+            case .brightnessUp: KeyJobs.shared.add(.brightness, delta: brightnessStep)
+            case .brightnessDown: KeyJobs.shared.add(.brightness, delta: -brightnessStep)
+            }
+        }
         return true
     }
 
@@ -94,7 +106,7 @@ final class MediaKeys: ObservableObject {
     fileprivate func handleKey(_ cg: CGEvent, down: Bool) -> Bool {
         let code = cg.getIntegerValueField(.keyboardEventKeycode)
         guard brightnessViaF, code == 107 || code == 113, onMonitor() else { return false }
-        if down { KeyJobs.shared.add(.brightness, delta: code == 113 ? step : -step) }
+        if down { KeyJobs.shared.add(.brightness, delta: code == 113 ? brightnessStep : -brightnessStep) }
         return true
     }
 

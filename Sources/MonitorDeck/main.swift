@@ -271,10 +271,13 @@ struct SettingsView: View {
     @ObservedObject var keys = MediaKeys.shared
     var body: some View {
         VStack(alignment: .leading, spacing: 8) {
-            Stepper(value: $keys.step, in: 1...20) {
-                Text(tr("Schritt pro Tastendruck: \(keys.step)", "Step per key press: \(keys.step)"))
+            Stepper(value: $keys.brightnessStep, in: 1...10) {
+                Text(tr("Helligkeit, Schritt pro Taste: \(keys.brightnessStep)", "Brightness, step per key: \(keys.brightnessStep)"))
             }
-            Text(tr("Gilt für Helligkeit und Lautstärke, wenn der Mauszeiger auf dem Monitor steht.", "Applies to brightness and volume while the pointer is on the monitor.")).font(.caption).foregroundStyle(.secondary).fixedSize(horizontal: false, vertical: true)
+            Stepper(value: $keys.volumeStep, in: 1...10) {
+                Text(tr("Lautstärke, Schritt pro Taste: \(keys.volumeStep)", "Volume, step per key: \(keys.volumeStep)"))
+            }
+            Text(tr("Gilt, wenn der Mauszeiger auf dem Monitor steht.", "Applies while the pointer is on the monitor.")).font(.caption).foregroundStyle(.secondary).fixedSize(horizontal: false, vertical: true)
         }
         .padding(20)
         .frame(width: 360)
