@@ -81,7 +81,7 @@ extension Model {
 
     func slider(_ c: Control, max: Int = 100) -> some View {
         let b = dragBinding(c)
-        return Slider(value: Binding(get: { Double(b.wrappedValue) }, set: { b.wrappedValue = Int($0) }), in: 0...Double(maxes[c] ?? max), step: 1) {
+        return Slider(value: Binding(get: { Double(b.wrappedValue) }, set: { b.wrappedValue = Int($0.rounded()) }), in: 0...Double(maxes[c] ?? max)) {
             Text(c.name)
         } onEditingChanged: { editing in
             if !editing { self.set(c, b.wrappedValue) }
@@ -106,34 +106,90 @@ extension Model {
             .disabled(values[c] == nil)
     }
 
-    /// Steuerelement eines Eintrags; der Eingang fragt vor dem Wechsel weg von USB-C nach.
-    @ViewBuilder func control(_ item: PinItem, sliderWidth: CGFloat? = nil) -> some View {
+    /// Nur das Steuerelement eines Eintrags (ohne Namen); der Eingang fragt vor dem Wechsel weg von USB-C nach.
+    @ViewBuilder func trailing(_ item: PinItem, sliderWidth: CGFloat? = nil) -> some View {
         switch item.kind {
-        case .picker(let names): picker(item.control, names, selection: item.control == .input ? inputBinding() : nil)
-        case .toggle: toggle(item.control)
+        case .picker(let names):
+            picker(item.control, names, selection: item.control == .input ? inputBinding() : nil).labelsHidden().fixedSize()
+        case .toggle:
+            toggle(item.control).labelsHidden()
         case .slider(let max):
             HStack(spacing: 10) {
-                Text(item.control.name)
                 if let w = sliderWidth { slider(item.control, max: max).frame(width: w) } else { slider(item.control, max: max) }
                 Text("\(values[item.control] ?? 0)").monospacedDigit().frame(width: 24, alignment: .trailing)
             }
         }
     }
 
-    /// Menüzeile wie im Design: Name links, Auswahlfeld kompakt rechts, 40 pt hoch.
+    /// Angepinnte Menüzeile: Name links, Steuerelement rechts, 40 pt hoch.
     @ViewBuilder func pinnedView(_ item: PinItem) -> some View {
-        switch item.kind {
-        case .picker(let names):
-            HStack {
-                Text(item.control.name)
-                Spacer()
-                picker(item.control, names, selection: item.control == .input ? inputBinding() : nil).labelsHidden().fixedSize()
-            }
-            .frame(height: 40)
-        case .toggle:
-            HStack { Text(item.control.name); Spacer(); toggle(item.control).labelsHidden() }.frame(height: 40)
-        case .slider: control(item).frame(height: 40)
+        HStack(spacing: 10) {
+            Text(item.control.name).fixedSize()
+            if case .slider = item.kind { trailing(item) } else { Spacer(minLength: 8); trailing(item) }
         }
+        .frame(height: 40)
+    }
+}
+
+// MARK: - Bausteine (Systemfarben, Karten wie im Design)
+
+/// Gruppenkarte: abgerundet, Haarlinie, Trennlinien zwischen den Zeilen (jede `Row` zeichnet ihre obere Linie, die erste wird abgeschnitten).
+struct Card<Content: View>: View {
+    @Environment(\.colorScheme) private var scheme
+    @ViewBuilder var content: Content
+    var body: some View {
+        VStack(spacing: 0) { content }
+            .padding(.top, -1)
+            .frame(maxWidth: .infinity)
+            .background(scheme == .dark ? Color.white.opacity(0.07) : Color(nsColor: .controlBackgroundColor))
+            .clipShape(RoundedRectangle(cornerRadius: 10))
+            .overlay(RoundedRectangle(cornerRadius: 10).strokeBorder(Color(nsColor: .separatorColor), lineWidth: 1))
+    }
+}
+
+/// Zeile in einer Karte: Name links, Inhalt rechts, 44 pt hoch.
+struct Row<Trailing: View>: View {
+    let title: String
+    @ViewBuilder var trailing: Trailing
+    var body: some View {
+        HStack(spacing: 8) {
+            Text(title)
+            Spacer(minLength: 8)
+            trailing
+        }
+        .padding(.horizontal, 14)
+        .frame(height: 44)
+        .overlay(alignment: .top) { Rectangle().fill(Color(nsColor: .separatorColor)).frame(height: 1) }
+    }
+}
+
+struct Footer: View {
+    let text: String
+    var note: String?
+    var body: some View {
+        VStack(alignment: .leading, spacing: 4) {
+            Text(text)
+            if let note { Text(note) }
+        }
+        .font(.callout).foregroundStyle(.secondary)
+        .padding(.horizontal, 4).padding(.top, 8)
+        .frame(maxWidth: .infinity, alignment: .leading)
+    }
+}
+
+/// Schritt-Regler als „−  N  +“.
+struct StepControl: View {
+    @Binding var value: Int
+    let range: ClosedRange<Int>
+    var body: some View {
+        HStack(spacing: 8) {
+            Button { value = max(range.lowerBound, value - 1) } label: { Image(systemName: "minus").frame(width: 28, height: 24) }
+                .disabled(value <= range.lowerBound)
+            Text("\(value)").monospacedDigit().frame(width: 20)
+            Button { value = min(range.upperBound, value + 1) } label: { Image(systemName: "plus").frame(width: 28, height: 24) }
+                .disabled(value >= range.upperBound)
+        }
+        .buttonStyle(.bordered).controlSize(.small)
     }
 }
 
@@ -144,27 +200,36 @@ struct SettingsView: View {
     @ObservedObject var pins = Pins.shared
     @ObservedObject var autostart = Autostart.shared
 
+    private func pinButton(_ c: Control) -> some View {
+        let on = pins.isPinned(c)
+        return Button { pins.binding(c).wrappedValue = !on } label: {
+            Image(systemName: on ? "pin.fill" : "pin").frame(width: 28, height: 28).contentShape(Rectangle())
+        }
+        .buttonStyle(.plain)
+        .foregroundStyle(on ? Color.accentColor : .secondary)
+        .help(tr("Im Menü anzeigen", "Show in menu"))
+        .accessibilityLabel(tr("\(c.name) im Menü anzeigen", "Show \(c.name) in menu"))
+    }
+
     private func pinRow(_ item: PinItem) -> some View {
-        HStack {
-            model.control(item, sliderWidth: 130)
-            Toggle(isOn: pins.binding(item.control)) {
-                Image(systemName: pins.isPinned(item.control) ? "pin.fill" : "pin")
-            }
-            .toggleStyle(.button).buttonStyle(.borderless)
-            .foregroundStyle(pins.isPinned(item.control) ? Color.accentColor : .secondary)
-            .help(tr("Im Menü anzeigen", "Show in menu"))
+        Row(title: item.control.name) {
+            model.trailing(item, sliderWidth: 130)
+            pinButton(item.control)
         }
     }
 
-    private func pinTab(_ items: [PinItem]) -> some View {
-        Form {
-            Section {
-                ForEach(items, id: \.control) { pinRow($0) }
-            } footer: {
-                Text(tr("Pin: Einstellung zusätzlich im Menü anzeigen. Lautstärke, Helligkeit, Kontrast und Schärfe sind immer im Menü.", "Pin: also show this setting in the menu. Volume, brightness, contrast and sharpness are always in the menu."))
+    private func pinTab(_ groups: [[PinItem]]) -> some View {
+        page {
+            ForEach(groups.indices, id: \.self) { g in
+                Card { ForEach(groups[g], id: \.control) { pinRow($0) } }
             }
+            Footer(text: tr("Pin: Einstellung zusätzlich im Menü anzeigen. Lautstärke, Helligkeit, Kontrast und Schärfe sind immer im Menü.", "Pin: also show this setting in the menu. Volume, brightness, contrast and sharpness are always in the menu."))
+                .padding(.top, -12)
         }
-        .formStyle(.grouped)
+    }
+
+    private func page<C: View>(@ViewBuilder _ content: () -> C) -> some View {
+        ScrollView { VStack(spacing: 20) { content() }.padding(.horizontal, 24).padding(.vertical, 20) }
     }
 
     enum Tab: CaseIterable { case image, gaming, mac, general
@@ -189,77 +254,75 @@ struct SettingsView: View {
                 .buttonStyle(.plain)
             }
         }
-        .padding(.vertical, 8)
+        .padding(.top, 30).padding(.bottom, 8)
         .frame(maxWidth: .infinity)
+        .background(.bar)
     }
 
     var body: some View {
         VStack(spacing: 0) {
             tabBar
             Divider()
-            Group {
             switch tab {
-            case .image: pinTab(PinItem.image)
-            case .gaming: pinTab(PinItem.gaming)
+            case .image: pinTab([Array(PinItem.image.prefix(2)), Array(PinItem.image.dropFirst(2))])
+            case .gaming: pinTab([PinItem.gaming])
             case .mac: macTab
             case .general: generalTab
             }
-            }
         }
         .frame(width: 560, height: 500)
+        .background(Color(nsColor: .windowBackgroundColor))
+        .ignoresSafeArea()
     }
 
     private var macTab: some View {
-            Form {
-                Section {
-                    Toggle(tr("Tasten steuern Monitor", "Keys control monitor"), isOn: Binding(get: { keys.enabled }, set: { $0 ? keys.start() : keys.stop() }))
-                    Picker(tr("Helligkeitstasten", "Brightness keys"), selection: $keys.brightnessViaF) {
-                        Label(tr("Systemtasten", "System keys"), systemImage: "sun.max").tag(true)
-                        Text(tr("Medientasten", "Media keys")).tag(false)
+        page {
+            VStack(spacing: 0) {
+                Card {
+                    Row(title: tr("Tasten steuern Monitor", "Keys control monitor")) {
+                        Toggle("", isOn: Binding(get: { keys.enabled }, set: { $0 ? keys.start() : keys.stop() })).toggleStyle(.switch).labelsHidden()
                     }
-                    .disabled(!keys.enabled)
-                    Stepper(value: $keys.brightnessStep, in: 1...10) {
-                        Text(tr("Schritt Helligkeit: \(keys.brightnessStep)", "Brightness step: \(keys.brightnessStep)"))
+                    Row(title: tr("Helligkeitstasten", "Brightness keys")) {
+                        Picker("", selection: $keys.brightnessViaF) {
+                            Text("F14 / F15").tag(true)
+                            Text(tr("Medientasten", "Media keys")).tag(false)
+                        }
+                        .labelsHidden().fixedSize().disabled(!keys.enabled)
                     }
-                    Stepper(value: $keys.volumeStep, in: 1...10) {
-                        Text(tr("Schritt Lautstärke: \(keys.volumeStep)", "Volume step: \(keys.volumeStep)"))
-                    }
-                } footer: {
-                    VStack(alignment: .leading, spacing: 4) {
-                        Text(tr("Wirkt nur, solange der Mauszeiger auf dem Monitor steht. Braucht die Berechtigung „Bedienungshilfen“. Schritte: 1–10.", "Only applies while the pointer is on the monitor. Needs the “Accessibility” permission. Steps: 1–10."))
-                        if let note = keys.note { Text(note) }
-                    }
+                    Row(title: tr("Schritt Helligkeit", "Brightness step")) { StepControl(value: $keys.brightnessStep, range: 1...10) }
+                    Row(title: tr("Schritt Lautstärke", "Volume step")) { StepControl(value: $keys.volumeStep, range: 1...10) }
                 }
-                Section {
-                    Toggle(tr("Systemwerte im Dashboard", "System stats on dashboard"), isOn: Binding(get: { feeder.enabled }, set: { $0 ? feeder.start() : feeder.stop() }))
-                } footer: {
-                    VStack(alignment: .leading, spacing: 4) {
-                        Text(tr("Sendet CPU- und GPU-Last sowie die SoC-Temperatur des Macs an das Dashboard des Monitors. Nicht lesbare Werte werden dort ausgeblendet.", "Sends the Mac's CPU and GPU load and SoC temperature to the monitor's dashboard. Values that cannot be read are hidden there."))
-                        if let note = feeder.note { Text(note) }
-                    }
-                }
+                Footer(text: tr("Wirkt nur, solange der Mauszeiger auf dem Monitor steht. Braucht die Berechtigung „Bedienungshilfen“. Schritte: 1–10.", "Only applies while the pointer is on the monitor. Needs the “Accessibility” permission. Steps: 1–10."), note: keys.note)
             }
-            .formStyle(.grouped)
+            VStack(spacing: 0) {
+                Card {
+                    Row(title: tr("Systemwerte im Dashboard", "System stats on dashboard")) {
+                        Toggle("", isOn: Binding(get: { feeder.enabled }, set: { $0 ? feeder.start() : feeder.stop() })).toggleStyle(.switch).labelsHidden()
+                    }
+                }
+                Footer(text: tr("Sendet CPU- und GPU-Last sowie die SoC-Temperatur des Macs an das Dashboard des Monitors. Nicht lesbare Werte werden dort ausgeblendet.", "Sends the Mac's CPU and GPU load and SoC temperature to the monitor's dashboard. Values that cannot be read are hidden there."), note: feeder.note)
+            }
+        }
     }
 
     private var generalTab: some View {
-            Form {
-                Section {
-                    Toggle(tr("Beim Anmelden starten", "Launch at login"), isOn: Binding(get: { autostart.enabled }, set: { autostart.set($0) }))
-                    LabeledContent(tr("Monitorwerte", "Monitor values")) {
-                        Button(tr("Neu lesen", "Reload")) { model.refresh() }
+        page {
+            VStack(spacing: 0) {
+                Card {
+                    Row(title: tr("Beim Anmelden starten", "Launch at login")) {
+                        Toggle("", isOn: Binding(get: { autostart.enabled }, set: { autostart.set($0) })).toggleStyle(.switch).labelsHidden()
                     }
-                } footer: {
-                    if let note = autostart.note { Text(note) }
+                    Row(title: tr("Monitorwerte", "Monitor values")) { Button(tr("Neu lesen", "Reload")) { model.refresh() } }
                 }
-                Section {
-                    LabeledContent(tr("Monitor", "Monitor"), value: "AORUS FO48U")
-                    if let c = model.connectionName { LabeledContent(tr("Verbindung", "Connection"), value: c) }
-                    LabeledContent(tr("Version", "Version"), value: Bundle.main.object(forInfoDictionaryKey: "CFBundleShortVersionString") as? String ?? "–")
-                }
+                if let note = autostart.note { Footer(text: note) }
             }
-            .formStyle(.grouped)
-            .onAppear { autostart.refresh() }
+            Card {
+                Row(title: tr("Monitor", "Monitor")) { Text("AORUS FO48U").foregroundStyle(.secondary) }
+                if let c = model.connectionName { Row(title: tr("Verbindung", "Connection")) { Text(c).foregroundStyle(.secondary) } }
+                Row(title: tr("Version", "Version")) { Text(Bundle.main.object(forInfoDictionaryKey: "CFBundleShortVersionString") as? String ?? "–").foregroundStyle(.secondary) }
+            }
+        }
+        .onAppear { autostart.refresh() }
     }
 }
 
@@ -270,7 +333,9 @@ struct SettingsView: View {
         if window == nil {
             let w = NSWindow(contentViewController: NSHostingController(rootView: SettingsView()))
             w.title = tr("MonitorDeck Einstellungen", "MonitorDeck Settings")
-            w.styleMask = [.titled, .closable]
+            w.styleMask = [.titled, .closable, .fullSizeContentView]
+            w.titleVisibility = .hidden
+            w.titlebarAppearsTransparent = true
             w.isReleasedWhenClosed = false
             w.center()
             window = w

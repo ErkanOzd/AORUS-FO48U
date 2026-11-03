@@ -158,6 +158,8 @@ struct MenuView: View {
 
     private var pinned: [PinItem] { PinItem.all.filter { pins.isPinned($0.control) } }
 
+    private func divider() -> some View { Divider().padding(.horizontal, -16).padding(.vertical, 4) }
+
     private func sliderRow(_ c: Control, icon: String, max: Int = 100) -> some View {
         HStack(spacing: 10) {
             Group {
@@ -168,7 +170,7 @@ struct MenuView: View {
             model.slider(c, max: max)
             Text("\(model.values[c] ?? 0)").monospacedDigit().frame(width: 30, alignment: .trailing)
         }
-        .frame(height: 30)
+        .frame(height: 44)
     }
 
     private var volumeRow: some View {
@@ -179,56 +181,60 @@ struct MenuView: View {
             } label: {
                 Image(systemName: v == 0 ? "speaker.slash" : "speaker.wave.2").frame(width: 20)
             }
-            .buttonStyle(.borderless).foregroundStyle(.secondary).help(tr("Stumm (0 und zurück)", "Mute (0 and back)"))
+            .buttonStyle(.plain).foregroundStyle(.secondary).help(tr("Stumm (0 und zurück)", "Mute (0 and back)"))
             .disabled(model.values[.volume] == nil)
             model.slider(.volume)
             Text("\(v)").monospacedDigit().frame(width: 30, alignment: .trailing)
         }
-        .frame(height: 30)
+        .frame(height: 44)
+    }
+
+    private func footerRow(_ title: String, _ key: String, action: @escaping () -> Void) -> some View {
+        Button(action: action) {
+            HStack { Text(title); Spacer(); Text(key).font(.callout).foregroundStyle(.secondary) }
+                .frame(height: 36).contentShape(Rectangle())
+        }
+        .buttonStyle(.plain)
     }
 
     var body: some View {
-        VStack(alignment: .leading, spacing: 6) {
+        VStack(alignment: .leading, spacing: 0) {
             if model.connected == nil {
-                Text(tr("Suche Monitor …", "Looking for monitor …"))
+                Text(tr("Suche Monitor …", "Looking for monitor …")).padding(.vertical, 8)
             } else if model.connected == false {
-                Text(tr("Kein passender Monitor gefunden", "No matching monitor found"))
-                Button(tr("Erneut suchen", "Search again")) { model.refresh() }
+                Text(tr("Kein passender Monitor gefunden", "No matching monitor found")).padding(.vertical, 8)
+                Button(tr("Erneut suchen", "Search again")) { model.refresh() }.padding(.bottom, 8)
             } else {
                 HStack {
                     VStack(alignment: .leading, spacing: 1) {
                         Text("AORUS FO48U").font(.headline)
-                        Label(tr("Verbunden", "Connected") + (model.values[.input].flatMap { $0 >= 0 && $0 < inputNames.count ? " · " + inputNames[$0] : nil } ?? ""), systemImage: "circle.fill").font(.caption).foregroundStyle(.secondary)
+                        Label(tr("Verbunden", "Connected") + (model.values[.input].flatMap { $0 >= 0 && $0 < inputNames.count ? " · " + inputNames[$0] : nil } ?? ""), systemImage: "circle.fill").font(.callout).foregroundStyle(.secondary)
                             .labelStyle(DotLabelStyle())
                     }
                     Spacer()
-                    Button { SettingsWindow.show() } label: { Image(systemName: "gearshape") }
-                        .buttonStyle(.borderless).help(tr("Einstellungen (⌘,)", "Settings (⌘,)"))
+                    Button { SettingsWindow.show() } label: { Image(systemName: "gearshape").font(.system(size: 15)).frame(width: 32, height: 32).contentShape(Rectangle()) }
+                        .buttonStyle(.plain).foregroundStyle(.secondary).help(tr("Einstellungen (⌘,)", "Settings (⌘,)"))
                 }
+                .padding(.bottom, 4)
                 volumeRow
                 sliderRow(.brightness, icon: "sun.max")
                 sliderRow(.contrast, icon: "circle.righthalf.filled")
                 sliderRow(.sharpness, icon: "sharpness", max: 10)
                 if !pinned.isEmpty {
-                    Divider()
-                    Text(tr("Angepinnt", "Pinned")).font(.caption).foregroundStyle(.secondary).textCase(.uppercase)
+                    divider()
+                    Text(tr("Angepinnt", "Pinned")).font(.caption).foregroundStyle(.secondary).textCase(.uppercase).padding(.vertical, 2)
                     ForEach(pinned, id: \.control) { item in model.pinnedView(item) }
                 }
-                if let note = keys.note { Text(note).font(.caption).foregroundStyle(.secondary) }
-                if let status = model.status { Text(status).font(.caption).foregroundStyle(.secondary) }
+                if let note = keys.note { Text(note).font(.caption).foregroundStyle(.secondary).fixedSize(horizontal: false, vertical: true).padding(.top, 4) }
+                if let status = model.status { Text(status).font(.caption).foregroundStyle(.secondary).fixedSize(horizontal: false, vertical: true).padding(.top, 4) }
             }
-            Divider()
-            Button { SettingsWindow.show() } label: {
-                HStack { Text(tr("Einstellungen …", "Settings …")); Spacer(); Text("⌘,").foregroundStyle(.secondary) }.contentShape(Rectangle())
-            }
-            .buttonStyle(.plain).keyboardShortcut(",")
-            Button { NSApplication.shared.terminate(nil) } label: {
-                HStack { Text(tr("Beenden", "Quit")); Spacer(); Text("⌘Q").foregroundStyle(.secondary) }.contentShape(Rectangle())
-            }
-            .buttonStyle(.plain).keyboardShortcut("q")
+            divider()
+            footerRow(tr("Einstellungen …", "Settings …"), "⌘,") { SettingsWindow.show() }.keyboardShortcut(",")
+            footerRow(tr("Beenden", "Quit"), "⌘Q") { NSApplication.shared.terminate(nil) }.keyboardShortcut("q")
         }
-        .padding(14)
+        .padding(.horizontal, 16).padding(.top, 14).padding(.bottom, 8)
         .frame(width: 300)
+        .focusEffectDisabled()
         .onAppear { model.refresh() }
     }
 }
