@@ -39,9 +39,10 @@ final class MediaKeys: ObservableObject {
         guard tap == nil else { return }
         let opts = ["AXTrustedCheckOptionPrompt": true] as CFDictionary
         guard AXIsProcessTrustedWithOptions(opts) else {
-            note = tr("Berechtigung nötig: Systemeinstellungen → Datenschutz & Sicherheit → Bedienungshilfen, dann erneut einschalten.", "Permission needed: System Settings → Privacy & Security → Accessibility, then switch on again.")
-            set(false); return
+            note = tr("Berechtigung nötig: Systemeinstellungen → Datenschutz & Sicherheit → Bedienungshilfen → MonitorDeck einschalten. Die Steuerung startet danach automatisch.", "Permission needed: System Settings → Privacy & Security → Accessibility → switch MonitorDeck on. Control starts automatically afterwards.")
+            set(false); waitForPermission(); return
         }
+        permissionTimer?.invalidate(); permissionTimer = nil
         let mask = CGEventMask((1 << 14) | (1 << 10) | (1 << 11))   // systemDefined, keyDown, keyUp
         let callback: CGEventTapCallBack = { _, type, event, _ in
             if type == .tapDisabledByTimeout || type == .tapDisabledByUserInput {
@@ -67,7 +68,20 @@ final class MediaKeys: ObservableObject {
         set(true)
     }
 
+    private var permissionTimer: Timer?
+    /// Prüft jede Sekunde, ob die Berechtigung erteilt wurde, und startet dann die Steuerung selbst.
+    private func waitForPermission() {
+        guard permissionTimer == nil else { return }
+        permissionTimer = Timer.scheduledTimer(withTimeInterval: 1, repeats: true) { _ in
+            MainActor.assumeIsolated {
+                let m = MediaKeys.shared
+                if AXIsProcessTrusted() { m.permissionTimer?.invalidate(); m.permissionTimer = nil; m.start() }
+            }
+        }
+    }
+
     func stop() {
+        permissionTimer?.invalidate(); permissionTimer = nil
         if let source { CFRunLoopRemoveSource(CFRunLoopGetMain(), source, .commonModes) }
         if let tap { CGEvent.tapEnable(tap: tap, enable: false) }
         tap = nil; source = nil; note = nil
