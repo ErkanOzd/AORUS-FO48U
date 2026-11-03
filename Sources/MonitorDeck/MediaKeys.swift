@@ -2,7 +2,7 @@ import AppKit
 import ApplicationServices
 import FO48UKit
 
-/// Leitet Helligkeits- und Lautstärketasten an den Monitor um, solange der Mauszeiger auf ihm steht.
+/// Leitet Helligkeits- (Mauszeiger auf dem Monitor) und Lautstärketasten (solange der Monitor angeschlossen ist) an den Monitor um.
 /// Braucht die Berechtigung „Bedienungshilfen“ (aktiver `CGEventTap`, nur so lassen sich Tasten abfangen).
 @MainActor
 final class MediaKeys: ObservableObject {
@@ -101,7 +101,12 @@ final class MediaKeys: ObservableObject {
         guard event.subtype.rawValue == 8 else { return false }
         let data = event.data1
         let flags = data & 0xFFFF
-        guard let code = Code(rawValue: (data & 0xFFFF0000) >> 16), onMonitor() else { return false }
+        guard let code = Code(rawValue: (data & 0xFFFF0000) >> 16) else { return false }
+        // Lautstärke und Stumm unabhängig vom Mauszeiger (der Ton hängt am Monitor, solange er angeschlossen ist); Helligkeit nur bei Zeiger auf dem Monitor.
+        switch code {
+        case .mute, .soundUp, .soundDown: guard monitorConnected() else { return false }
+        case .brightnessUp, .brightnessDown: guard onMonitor() else { return false }
+        }
         // Nur Tastendruck (0xA) auslösen, Loslassen aber ebenfalls verschlucken.
         if (flags & 0xFF00) >> 8 == 0xA {
             // „Systemtasten“ fängt Nx- und F14/F15-Helligkeit ab; sendet eine Tastatur beides, zählt nur die erste Quelle.
@@ -135,6 +140,12 @@ final class MediaKeys: ObservableObject {
     private func recentlyHandled(_ other: Source) -> Bool {
         guard let l = lastBrightness, l.0 == other else { return false }
         return CACurrentMediaTime() - l.1 < 0.06
+    }
+
+    private func monitorConnected() -> Bool {
+        NSScreen.screens.contains { s in
+            (s.deviceDescription[NSDeviceDescriptionKey("NSScreenNumber")] as? CGDirectDisplayID).map { CGDisplayVendorNumber($0) == Self.vendor } ?? false
+        }
     }
 
     private func onMonitor() -> Bool {

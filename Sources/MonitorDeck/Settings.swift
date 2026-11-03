@@ -17,7 +17,7 @@ struct PinItem {
     ]
     static let gaming: [PinItem] = [
         PinItem(control: .overDrive, kind: .picker(overDriveNames)),
-        PinItem(control: .crosshair, kind: .picker(crosshairNames)),
+        PinItem(control: .crosshair, kind: .toggle),
         PinItem(control: .freeSync, kind: .toggle),
         PinItem(control: .aimStabilizer, kind: .toggle),
         PinItem(control: .refreshOSD, kind: .toggle),
@@ -30,7 +30,7 @@ struct PinItem {
 final class Pins: ObservableObject {
     static let shared = Pins()
     private static let key = "pinnedControls"
-    private static let defaults: [Control] = [.pictureMode, .blackEQ, .freeSync]
+    private static let defaults: [Control] = []
     @Published private var codes: Set<Int>
 
     private init() {
@@ -101,7 +101,7 @@ extension Model {
 
     func toggle(_ c: Control) -> some View {
         let b = binding(c)
-        return Toggle(c.name, isOn: Binding(get: { b.wrappedValue == 1 }, set: { b.wrappedValue = $0 ? 1 : 0 }))
+        return Toggle(c.name, isOn: Binding(get: { b.wrappedValue != 0 }, set: { b.wrappedValue = $0 ? 1 : 0 }))
             .toggleStyle(.switch)
             .disabled(values[c] == nil)
     }
@@ -292,7 +292,7 @@ struct SettingsView: View {
                     Row(title: tr("Schritt Helligkeit", "Brightness step")) { StepControl(value: $keys.brightnessStep, range: 1...10) }
                     Row(title: tr("Schritt Lautstärke", "Volume step")) { StepControl(value: $keys.volumeStep, range: 1...10) }
                 }
-                Footer(text: tr("Wirkt nur, solange der Mauszeiger auf dem Monitor steht. Braucht die Berechtigung „Bedienungshilfen“. Schritte: 1–10.", "Only applies while the pointer is on the monitor. Needs the “Accessibility” permission. Steps: 1–10."), note: keys.note)
+                Footer(text: tr("Helligkeit wirkt nur, solange der Mauszeiger auf dem Monitor steht, Lautstärke und Stumm immer. Braucht die Berechtigung „Bedienungshilfen“. Schritte: 1–10.", "Brightness only applies while the pointer is on the monitor, volume and mute always. Needs the “Accessibility” permission. Steps: 1–10."), note: keys.note)
             }
             VStack(spacing: 0) {
                 Card {

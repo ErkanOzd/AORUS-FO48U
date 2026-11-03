@@ -4,7 +4,6 @@ import FO48UKit
 
 let modes = ["Standard", "FPS", "RTS/RPG", tr("Film", "Movie"), tr("Lesen", "Reading"), "sRGB", "Custom 1", "Custom 2", "Custom 3"]
 let inputNames = ["HDMI 1", "HDMI 2", "DisplayPort", "USB-C"]
-let crosshairNames = [tr("Aus", "Off"), "1", "2", "3", "4"]
 let gammaNames = [tr("Aus", "Off"), "1.8", "2.0", "2.2", "2.4", "2.6"]
 let colorTempNames = [tr("Kalt", "Cool"), "Normal", tr("Warm", "Warm")]
 let overDriveNames = [tr("Aus", "Off"), "Smart OD", tr("Bildqualität", "Picture Quality"), tr("Ausgewogen", "Balanced"), tr("Geschwindigkeit", "Speed")]
