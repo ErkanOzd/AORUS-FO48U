@@ -8,13 +8,22 @@ import FO48UKit
 final class MediaKeys: ObservableObject {
     static let shared = MediaKeys()
     private static let key = "mediaKeysEnabled"
-    /// Schrittweite pro Tastendruck (0–100).
-    private static let step = 5
+    private static let stepKey = "mediaKeysStep"
+    private static let fKeysKey = "mediaKeysBrightnessF"
     /// EISA-Herstellerkennung „GBT“ (Gigabyte): (7<<10)|(2<<5)|20.
     private static let vendor: UInt32 = 7252
 
     @Published private(set) var enabled = UserDefaults.standard.bool(forKey: MediaKeys.key)
     @Published private(set) var note: String?
+    /// Schrittweite pro Tastendruck (1–20, Standard 5).
+    @Published var step: Int = {
+        let v = UserDefaults.standard.integer(forKey: MediaKeys.stepKey)
+        return v == 0 ? 5 : min(max(v, 1), 20)
+    }() { didSet { UserDefaults.standard.set(step, forKey: Self.stepKey) } }
+    /// `true`: Helligkeit über F14/F15 (so liefert sie die Tastatur am Test-Mac [gemessen]); `false`: über Medientasten (Nx-Ereignis).
+    @Published var brightnessViaF: Bool = UserDefaults.standard.object(forKey: MediaKeys.fKeysKey) as? Bool ?? true {
+        didSet { UserDefaults.standard.set(brightnessViaF, forKey: Self.fKeysKey) }
+    }
     private var tap: CFMachPort?
     private var source: CFRunLoopSource?
 
@@ -28,13 +37,16 @@ final class MediaKeys: ObservableObject {
             note = tr("Berechtigung nötig: Systemeinstellungen → Datenschutz & Sicherheit → Bedienungshilfen, dann erneut einschalten.", "Permission needed: System Settings → Privacy & Security → Accessibility, then switch on again.")
             set(false); return
         }
-        let mask = CGEventMask(1 << 14)   // NSEvent.EventType.systemDefined
+        let mask = CGEventMask((1 << 14) | (1 << 10) | (1 << 11))   // systemDefined, keyDown, keyUp
         let callback: CGEventTapCallBack = { _, type, event, _ in
             if type == .tapDisabledByTimeout || type == .tapDisabledByUserInput {
                 DispatchQueue.main.async { MediaKeys.shared.reenable() }
                 return Unmanaged.passUnretained(event)
             }
             // Das Ereignis wird synchron auf dem Main-Thread (Run-Loop des Taps) behandelt.
+            if type == .keyDown || type == .keyUp {
+                return MainActor.assumeIsolated { MediaKeys.shared.handleKey(event, down: type == .keyDown) } ? nil : Unmanaged.passUnretained(event)
+            }
             let swallow = MainActor.assumeIsolated { MediaKeys.shared.handle(event) }
             return swallow ? nil : Unmanaged.passUnretained(event)
         }
@@ -66,13 +78,23 @@ final class MediaKeys: ObservableObject {
 
     /// `true`, wenn die Taste verschluckt wird (Mauszeiger auf dem Monitor).
     fileprivate func handle(_ cg: CGEvent) -> Bool {
-        guard let event = NSEvent(cgEvent: cg), event.subtype.rawValue == 8 else { return false }
+        guard let event = NSEvent(cgEvent: cg) else { return false }
+        guard event.subtype.rawValue == 8 else { return false }
         let data = event.data1
         let flags = data & 0xFFFF
         guard let code = Code(rawValue: (data & 0xFFFF0000) >> 16), onMonitor() else { return false }
+        if brightnessViaF, code == .brightnessUp || code == .brightnessDown { return false }
         // Nur Tastendruck (0xA) auslösen, Loslassen aber ebenfalls verschlucken.
         if (flags & 0xFF00) >> 8 == 0xA { KeyJobs.shared.add(code == .mute ? .mute : (code == .soundUp || code == .soundDown ? .volume : .brightness),
-                                                            delta: code == .soundUp || code == .brightnessUp ? Self.step : (code == .mute ? 0 : -Self.step)) }
+                                                            delta: code == .soundUp || code == .brightnessUp ? step : (code == .mute ? 0 : -step)) }
+        return true
+    }
+
+    /// Helligkeitstasten laufen auf manchen Tastaturen als F14 (runter, 107) / F15 (hoch, 113) statt als Nx-Ereignis [gemessen].
+    fileprivate func handleKey(_ cg: CGEvent, down: Bool) -> Bool {
+        let code = cg.getIntegerValueField(.keyboardEventKeycode)
+        guard brightnessViaF, code == 107 || code == 113, onMonitor() else { return false }
+        if down { KeyJobs.shared.add(.brightness, delta: code == 113 ? step : -step) }
         return true
     }
 

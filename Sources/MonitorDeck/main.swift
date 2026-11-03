@@ -225,7 +225,14 @@ struct MenuView: View {
                 if let note = feeder.note { Text(note).font(.caption).foregroundStyle(.secondary) }
                 Toggle(tr("Tasten steuern Monitor", "Keys control monitor"), isOn: Binding(get: { keys.enabled }, set: { $0 ? keys.start() : keys.stop() }))
                 if let note = keys.note { Text(note).font(.caption).foregroundStyle(.secondary) }
+                if keys.enabled {
+                    Picker(tr("Helligkeitstasten", "Brightness keys"), selection: $keys.brightnessViaF) {
+                        Text("F14 / F15").tag(true)
+                        Text(tr("Medientasten", "Media keys")).tag(false)
+                    }
+                }
                 Button(tr("Werte neu lesen", "Reload values")) { model.refresh() }
+                Button(tr("Einstellungen …", "Settings …")) { SettingsWindow.show() }.keyboardShortcut(",")
                 if let status = model.status { Text(status).font(.caption).foregroundStyle(.secondary) }
             }
             Toggle(tr("Beim Anmelden starten", "Launch at login"), isOn: Binding(get: { autostart }, set: setAutostart))
@@ -257,6 +264,37 @@ struct MenuView: View {
         fail.messageText = tr("Autostart konnte nicht eingerichtet werden", "Could not set up launch at login")
         fail.informativeText = error.localizedDescription
         fail.runModal()
+    }
+}
+
+struct SettingsView: View {
+    @ObservedObject var keys = MediaKeys.shared
+    var body: some View {
+        VStack(alignment: .leading, spacing: 8) {
+            Stepper(value: $keys.step, in: 1...20) {
+                Text(tr("Schritt pro Tastendruck: \(keys.step)", "Step per key press: \(keys.step)"))
+            }
+            Text(tr("Gilt für Helligkeit und Lautstärke, wenn der Mauszeiger auf dem Monitor steht.", "Applies to brightness and volume while the pointer is on the monitor.")).font(.caption).foregroundStyle(.secondary).fixedSize(horizontal: false, vertical: true)
+        }
+        .padding(20)
+        .frame(width: 360)
+    }
+}
+
+/// Eigenes Einstellungsfenster (⌘, im Menü), da die App ohne Dock-Symbol läuft.
+@MainActor enum SettingsWindow {
+    private static var window: NSWindow?
+    static func show() {
+        if window == nil {
+            let w = NSWindow(contentViewController: NSHostingController(rootView: SettingsView()))
+            w.title = tr("MonitorDeck Einstellungen", "MonitorDeck Settings")
+            w.styleMask = [.titled, .closable]
+            w.isReleasedWhenClosed = false
+            w.center()
+            window = w
+        }
+        NSApp.activate(ignoringOtherApps: true)
+        window?.makeKeyAndOrderFront(nil)
     }
 }
 
