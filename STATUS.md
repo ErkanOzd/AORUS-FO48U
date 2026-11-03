@@ -1,46 +1,35 @@
 # Status – AORUS FO48U
 
-**Stand:** 2026-11-03
+**Stand:** 2026-11-03 · **Version:** 0.2.4 (Beta, Pre-release)
 
 ## Aktueller Fokus / Phase
 - Ziel: Gigabyte-Sidekick (Monitor-Steuerung) für macOS nachbauen. Die Gigabyte-Suite im ZIP dient nur als Analysequelle.
-- Phase 1 (Analyse) abgeschlossen, Phase 2 begonnen: Lesen und Schreiben am echten Monitor belegt, Menüleisten-App `MonitorDeck` läuft. Details: `docs/PROTOKOLL.md`.
+- Phase 1 (Analyse) abgeschlossen, Phase 2 läuft: Lesen und Schreiben am echten Monitor belegt, Menüleisten-App `MonitorDeck` im Beta-Stand. Protokoll: `docs/PROTOKOLL.md`; Funktionsumfang und Prüfstand: `docs/FUNKTIONEN.md`.
 
 ## Monitor-Fakten (Quelle: `ioreg`/`system_profiler`/CoreGraphics am Mac, 2026-10-30)
 - Modell AORUS FO48U, Hersteller-ID `GBT`, Baujahr 2022 (Woche 7).
 - Anschluss: USB-C, DisplayPort 1.4 (DP-Alt-Mode), EDID komplett in `ioreg`.
 - Bild: 70 × 39 cm (48 Zoll, 16:9), nativ 3840 × 2160, Refresh laut EDID 24–120 Hz.
 - macOS-Modi: bei 4K nur 60 und 24 Hz (alle Skalierungen); 120 Hz nur bis 2560 × 1440. EDID `MaxTotalPixelRate` 594 MHz (4K60). Ursache offen (Kabel, Port oder EDID, nicht getrennt getestet).
-- USB-Seite: Realtek-HID-Gerät VID 3034 / PID 4352 am Mac sichtbar (Vendor-Usage-Page `0xFFDA`, 192-Byte-Reports). Für die Steuerung nicht nötig.
+- USB-Seite: Realtek-HID-Gerät VID `0x0BDA` / PID `0x1100` am Mac sichtbar (Vendor-Usage-Page `0xFFDA`, 192-Byte-Reports). Für die Steuerung nicht nötig.
 
 ## Zuletzt erledigt
-- Protokoll geklärt: DDC/CI (`0x6E`/`0x51`), Standard-VCP plus herstellerspezifisch `0xE0` mit Sub-ID; Wertetabellen für Bildmodus, Eingang und Schalter aus dem Dekompilat gezogen (`docs/PROTOKOLL.md`).
-- Schreibzugriff belegt: Helligkeit und OverDrive gesetzt, zurückgelesen, Ausgangswert wiederhergestellt.
-- Swift-Package `MonitorDeck`: `FO48UKit` (DDC über `IOAVService`) und Menüleisten-App (Funktionsumfang: `docs/FUNKTIONEN.md`). Schreiben nur über Bindings, nicht beim Neulesen. Bedienung im Menü vom Nutzer bestätigt (2026-10-30).
-- `Monitor.write` liest nach jedem Schreiben zurück (bis 3 Versuche) und sucht den DDC-Dienst bei Fehlschlag neu (nach Quellenwechsel). `--writetest` belegt das für Helligkeit (75→65→75, bestätigt). `--inputtest` (USB-C → DisplayPort → USB-C, nur Kernschicht): Rückschalten gelang nach 7 Versuchen (~7 s) über dieselbe `Monitor`-Instanz, Eingang danach 3 (belegt). Quellenwechsel über die Menü-UI: vom Nutzer geprüft, Regler funktionieren danach weiter (Stand 2026-10-30).
-- Erststart-Abfrage „Beim Anmelden starten?“ (`askAutostartOnce`, einmalig per `UserDefaults`; Dialog am Bildschirm belegt, Klick auf „Beim Anmelden starten“ unverifiziert).
-- App-Icon (`Resources/AppIcon.icns`, gezeichnet per `scripts/make-icon.swift`: Monitor mit drei farbigen Reglern) und `scripts/make-dmg.sh` (DMG mit Applications-Link, Signatur im gemounteten Image geprüft; Installation per Ziehen unverifiziert, Release auf GitHub noch nicht angelegt).
-- `scripts/build-app.sh` baut `dist/MonitorDeck.app` (LSUIElement, ad-hoc signiert); aus `~/Applications` gestartet läuft sie ohne Dock-Symbol (belegt). Autostart über `SMAppService`: `--autostart on` meldet „an“ (belegt); tatsächlicher Start nach Neuanmeldung unverifiziert.
-- Repo für Veröffentlichung vorbereitet (MIT-Lizenz, README, keine Gigabyte-Dateien, keine Seriennummer).
-- OverDrive-Stufen 0–4 = Aus, Smart OD, Bildqualität, Ausgewogen, Geschwindigkeit (Namen aus `OSD.cs`, Anzahl passt zu max 4, Zuordnung ungeprüft); Gamma/Farbtemperatur: Namen aus `OSD.cs` (siehe `docs/PROTOKOLL.md`), am OSD noch nicht gegengelesen.
-- Menü: Eingangswechsel weg von USB-C fragt nach; Picker bieten alle gemeldeten Stufen (unbenannte als „Stufe N“); Regler ohne gelesenen Wert sind deaktiviert; Schreiben liest vorher den Ist-Wert und springt bei Ablehnung zurück (Build ok, `--selftest`/`--writetest` belegt; vom Nutzer in der UI bestätigt, 2026-10-30: Popover öffnet, Rückfrage beim Eingangswechsel erscheint, Picker zeigen die Stufen, Zurückschalten auf USB-C über das Menü gelingt. Nicht geprüft: Verhalten bei Wahl von „Abbrechen“ und die Stufe-N-Anzeige für unbenannte Werte einzeln).
-- Oberfläche zweisprachig (`tr(de, en)` in `FO48UKit`, Systemsprache; Englisch als Fallback): Build und `--selftest` in beiden Sprachen belegt (`-AppleLanguages`); am Bildschirm (Release-Build, `-AppleLanguages "(en)"`) belegt: Popover, Beschriftungen, Picker Bildmodus („Level 9“ für die unbenannte Stufe) und Eingang (Liste) und Eingangs-Dialog („Switch input to HDMI 1?“, „Cancel“ lässt USB-C stehen; `--selftest` danach: Eingang 3/3). „Switch“ in englischer UI nicht ausgelöst.
-- Dashboard-Funktion (Menü-Schalter „Systemwerte im Dashboard“): sendet CPU-/GPU-Last und SoC-Temperatur alle 2 s (150 ms Paketabstand), blendet nicht lesbare Felder am Monitor aus; Sichtprüfung vom Nutzer bestätigt (2026-10-30, ein Mac ohne Lüfter). Ungeprüft: Takt, Macs mit Lüfter, Zusammenspiel mit Reglern über längere Zeit, Verhalten nach Monitor-Neustart. Details: `docs/PROTOKOLL.md`, Abschnitt „Dashboard“.
-- Tasten-Umleitung (Menü-Schalter „Tasten steuern Monitor“, `MediaKeys.swift`): `CGEventTap`, Helligkeit/Lautstärke (Schritt 1–10, je für Helligkeit und Lautstärke, Standard 5; Fenster „Einstellungen …“, ⌘,) und Stumm (0 und zurück) gehen per DDC an den FO48U, wenn der Mauszeiger auf ihm steht (Hersteller-ID GBT). Lautstärke und Stumm kommen als Medientasten (Nx-Ereignis) an; die Helligkeitstasten kamen am Test-Mac (MacBook Air M5) als F14/F15 (Keycode 107/113, Fn-Flag) an, nicht als Nx-Ereignis [gemessen 2026-11-03]; Auswahl „Helligkeitstasten“ im Tab Mac (Systemtasten mit Sonnen-Symbol = F14/F15, oder Medientasten) für Tastaturen, die anders senden. Mit echten Tasten bestätigt (Nutzer, 2026-11-03). Berechtigung „Bedienungshilfen“ nötig; ad-hoc-signierte Builds verlieren sie bei jedem Neubau (mit Developer-Signatur blieb sie erhalten). Ungeprüft: Stumm, Verhalten auf dem Notebook-Display, mehrere externe Monitore.
-- Menü/Einstellungen umgebaut (2026-11-03, Design abgestimmt im Canvas): Menü zeigt Lautstärke, Helligkeit, Kontrast, Schärfe und frei angepinnte Einstellungen; Einstellungen (⌘,) mit Tabs Bild, Gaming, Mac, Allgemein (`Settings.swift`). Gebaut, `--selftest` ok, Menü, Fenster und Pin-Speicherung per Screenshot/`defaults` geprüft; Klickbedienung der Gaming-/Mac-/Allgemein-Tabs ungeprüft. Menü-Kopfzeile zeigt „Verbunden · <aktiver Eingang>“ (VCP 0x60), Tab Allgemein die Zeile „Verbindung"; Stumm-Zustand (`KeyJobs.volumeBeforeMute`) ist zwischen Menü und Tasten gemeinsam. Menü und Einstellungen am 2026-11-03 nach dem Canvas neu aufgebaut (Karten mit 44-pt-Zeilen, Pin-Button pro Zeile, −/+-Schrittregler, Systemfarben; `Settings.swift`, `MenuView` in `main.swift`). Darstellung am 2026-11-03 vom Nutzer gegen den Entwurf abgenommen (Slider ohne Strichmarken, Titelleiste mit Tabs vereint). Release 0.2.0 (Pre-release) mit `scripts/make-dmg.sh`; 0.2.1: Erststart-Abfrage „Helligkeits- und Lautstärketasten nutzen?“ (`askKeysOnce`, löst die Berechtigung „Bedienungshilfen“ aus; vorher fragte die App nie), Auswahl „Systemtasten“ (Sonnen-Symbol) statt „F14 / F15“. Erststart-Abfrage am Bildschirm belegt, Wirkung der Tasten nach Erteilung der Berechtigung ungeprüft. 0.2.2: „Systemtasten“ fängt auch die Nx-Helligkeitstasten ab (die interne Tastatur sendet Nx-Code 2/3, nicht F14/F15 [gemessen 2026-11-03]; bei beiden Quellen zählt nur die erste, 60 ms), Zahnrad in der Menü-Kopfzeile entfernt (Zeile „Einstellungen …“ bleibt). Wirkung auf der internen Tastatur ungeprüft. 0.2.3: Nach fehlender Berechtigung wartet die App per Timer (1 s) auf „Bedienungshilfen“ und startet die Steuerung selbst, der Schalter muss nicht erneut betätigt werden (Automatismus nach Erteilen ungeprüft). 0.2.4: Fadenkreuz nur noch Ein/Aus (Motive 1–4 identisch laut Nutzer, schreibt 1); Lautstärke- und Stumm-Tasten unabhängig von der Mausposition (solange ein GBT-Monitor angeschlossen ist), Helligkeit weiter nur bei Zeiger auf dem Monitor; keine Standard-Pins mehr (bestehende Auswahl bleibt). Alles gebaut, am Bildschirm ungeprüft. Unverifiziert: Stumm-Wiederherstellung.
-- Menü (früher): Schärfe, Farbtemperatur, Fadenkreuz, Aim Stabilizer, Refresh-Anzeige; Schreiben mit Rücklesen am Monitor belegt. Eagle Eye/Night Vision nicht im Menü (Monitor beantwortet die Abfrage nicht, siehe `docs/PROTOKOLL.md`). PIP/PBP, OSD-Größe, KVM bewusst nicht aufgenommen (ungeprüft).
-- Entpackte Gigabyte-Dateien (ca. 1,7 GB) gelöscht, `_analyse/sidekick` (96 MB) bleibt; alles aus dem ZIP reproduzierbar. Keine Windows-VM nötig gewesen.
-
-- Review-Blocker behoben (2026-10-30): Zielmonitor-Wahl mit Pfad-Bindung bei Neu-Suche (K1, nur mit einem Monitor getestet), DDC auf eigener Queue und Slider schreiben beim Loslassen (K2), `WriteResult` statt „Erfolg bei fehlendem Rücklesen“ (H1), Antwortprüfung auf Sub-ID und Prüfsumme (H2). `--writetest` und `--inputtest` liefen erfolgreich; Slider-Ziehen in der UI vom Nutzer bestätigt („Regler funktionieren“, 2026-10-30). Offen aus dem Review: Mittel- und Niedrig-Befunde.
-- App umbenannt in „MonitorDeck“ (generischer, vermeidet „Sidekick“ als Gigabyte-Produktname); Executable, Swift-Targets, Bundle-ID und Repo-Name unverändert. `docs/FUNKTIONEN.md` legt Funktionsumfang und Prüfstand offen; README lädt zum Testen mit anderen AORUS-Modellen ein.
+- Protokoll geklärt (DDC/CI, Standard-VCP plus herstellerspezifisch `0xE0` mit Sub-ID), Schreiben mit Rücklesen am Monitor belegt: `docs/PROTOKOLL.md`. Tests: `--selftest`, `--writetest`, `--inputtest` (Eingangswechsel USB-C → DisplayPort → USB-C, Rückschalten nach 7 Versuchen / ca. 7 s, belegt).
+- App `MonitorDeck` (`FO48UKit` + Menüleisten-App), Icon, `scripts/build-app.sh`, `scripts/make-dmg.sh`; Repo öffentlich vorbereitet (MIT, keine Gigabyte-Dateien, keine Seriennummer); Umbenennung von „Sidekick“ zu „MonitorDeck“ (Executable, Targets, Bundle-ID und Repo-Name unverändert). Zweisprachige Oberfläche (`tr(de, en)`), am Bildschirm in beiden Sprachen belegt.
+- Review-Blocker vom 2026-10-30 (Zielmonitor-Wahl, DDC-Queue, `WriteResult`, Antwortprüfung) behoben, Details im Git-Log.
+- Dashboard-Feed (CPU/GPU/SoC-Temperatur): Sichtprüfung vom Nutzer bestätigt (2026-10-30, ein Mac ohne Lüfter); Details `docs/PROTOKOLL.md`, Abschnitt „Dashboard“.
+- Release 0.2.0 (2026-11-03): Menü und Einstellungen nach Canvas-Entwurf neu aufgebaut, vom Nutzer abgenommen.
+- 0.2.1: Erststart-Abfrage „Helligkeits- und Lautstärketasten nutzen?“ (`askKeysOnce`, löst „Bedienungshilfen“ aus; vorher fragte die App nie), Auswahl „Systemtasten“.
+- 0.2.2: „Systemtasten“ fängt Nx und F14/F15 ab (die interne Tastatur sendet Helligkeit als Nx-Code 2/3, eine andere Tastatur als F14/F15, Keycode 107/113 [gemessen 2026-11-03]; erste Quelle zählt, 60 ms); Zahnrad in der Menü-Kopfzeile entfernt.
+- 0.2.3: Steuerung startet selbst, sobald „Bedienungshilfen“ erteilt ist (1-s-Timer).
+- 0.2.4: Fadenkreuz nur Ein/Aus (Motive 1–4 identisch laut Nutzer, schreibt 1); Lautstärke und Stumm unabhängig von der Mausposition, Helligkeit nur bei Zeiger auf dem Monitor; keine Standard-Pins.
+- Unverifiziert: Tastenwirkung der Versionen 0.2.2–0.2.4 am Bildschirm, Stumm-Wiederherstellung, Autostart nach Neuanmeldung (Klick auf „Beim Anmelden starten“), Klickbedienung der Tabs Gaming/Mac/Allgemein.
 
 ## Nächste Schritte (priorisiert)
-1. Gamma (1.8…2.6) und Farbtemperatur (Kalt/Normal/Warm) am Monitor-OSD gegenlesen; Eagle Eye/Night Vision: klären, ob der FO48U sie überhaupt hat.
-2. Weitere Funktionen prüfen (PIP/PBP, OSD-Größe, KVM, Timer).
-3. Eingangswechsel mit Vorsicht testen: Wechsel weg von USB-C trennt das Bild des Macs.
-4. Funktionsumfang festlegen (Crosshair, Timer, KVM, PIP/PBP?) und prüfen, ob davon etwas nur über das USB-HID-Gerät läuft.
-5. Notarisierung entfällt wegen privater API (ad-hoc signiert).
+1. Offene Prüfpunkte abarbeiten: `docs/FUNKTIONEN.md`, Abschnitt „Nicht im Menü“ und Prüfstand; Gamma/Farbtemperatur am OSD gegenlesen.
+2. Eingangswechsel mit Vorsicht testen: Wechsel weg von USB-C trennt das Bild des Macs.
+3. Prüfen, ob Timer, KVM oder PIP/PBP nur über das USB-HID-Gerät laufen.
 
-## Offene Entscheidungen / Blocker
-- Gewünschter Funktionsumfang des Nachbaus.
+## Entscheidungen / Blocker
+- Notarisierung entfällt wegen privater API (ad-hoc signiert; „Bedienungshilfen“ muss nach jedem Neubau neu erteilt werden).
 - `IOAVService` ist eine private Apple-API: nicht App-Store-tauglich, kann mit macOS-Updates brechen.

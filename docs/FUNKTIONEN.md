@@ -24,7 +24,7 @@ Die Menü-Kopfzeile zeigt „Verbunden · <aktiver Eingang>“ (aus VCP 0x60); d
 | Fadenkreuz, Aim Stabilizer, Refresh-Anzeige | ja | ja | Fadenkreuz als Ein/Aus-Schalter (Motive 1–4 sind laut Nutzer identisch); Ein schreibt 1 |
 | FreeSync | ja | nicht einzeln geprüft | |
 | Systemwerte im Dashboard | n. a. | ja: CPU-/GPU-Last und SoC-Temperatur alle 2 s; Sichtprüfung am Monitor bestätigt (MacBook Air M5) | Takt/Lüfter nicht lesbar und am Monitor ausgeblendet; Macs mit Lüfter ungeprüft |
-| Tasten steuern Monitor | n. a. | ja: Helligkeits- und Lautstärketasten (Schritt 1–10, getrennt für Helligkeit und Lautstärke, im Tab „Mac“ der Einstellungen (⌘,), Standard 5; Stumm = 0 und zurück; Helligkeitstasten wählbar: „Systemtasten“ mit Sonnen-Symbol (Standard, fängt Medientasten und F14 / F15 ab) oder Medientasten), Helligkeit nur wenn der Mauszeiger auf dem Monitor steht, Lautstärke und Stumm unabhängig von der Mausposition, solange der Monitor angeschlossen ist; mit echten Tasten bestätigt (MacBook Air, ein FO48U) | Berechtigung „Bedienungshilfen“ nötig (Erststart-Abfrage fragt einmal, sonst Schalter im Tab „Mac“); Stumm-Wiederherstellung und Notebook-Display-Verhalten nicht einzeln geprüft; die Berechtigung muss nach jedem Neubau der ad-hoc-signierten App neu erteilt werden |
+| Tasten steuern Monitor | n. a. | ja: Helligkeits- und Lautstärketasten (Schritt 1–10, getrennt für Helligkeit und Lautstärke, im Tab „Mac“ der Einstellungen (⌘,), Standard 5; Stumm = 0 und zurück; Helligkeitstasten wählbar: „Systemtasten“ mit Sonnen-Symbol (Standard, fängt Medientasten und F14 / F15 ab) oder Medientasten), Helligkeit nur wenn der Mauszeiger auf dem Monitor steht, Lautstärke und Stumm unabhängig von der Mausposition, solange der Monitor angeschlossen ist; mit echten Tasten bestätigt (2026-11-03, MacBook Air, ein FO48U) | Berechtigung „Bedienungshilfen“ nötig (Erststart-Abfrage fragt einmal, sonst Schalter im Tab „Mac“); Stumm-Wiederherstellung und Notebook-Display-Verhalten nicht einzeln geprüft; die Berechtigung muss nach jedem Neubau der ad-hoc-signierten App neu erteilt werden |
 | Autostart beim Anmelden | n. a. | `--autostart on` meldet „an“ | Start nach Neuanmeldung ungeprüft |
 
 ## Nicht im Menü
@@ -32,7 +32,7 @@ Die Menü-Kopfzeile zeigt „Verbunden · <aktiver Eingang>“ (aus VCP 0x60); d
 | Funktion | Grund |
 |---|---|
 | Eagle Eye, Night Vision, OSD-Größe | Der Monitor beantwortet diese Abfragen nicht (liefert nur ein Echo der vorherigen Antwort). Ob der FO48U sie unterstützt, ist offen; Details in `docs/PROTOKOLL.md`. |
-| PIP/PBP, OSD-Größe, KVM, Timer | bewusst nicht aufgenommen, ungeprüft |
+| PIP/PBP, KVM, Timer | bewusst nicht aufgenommen, ungeprüft |
 | RGB-Verstärkung, Farbsättigung, HDR, Local Dimming u. a. | Sub-IDs stehen in `docs/PROTOKOLL.md`, am FO48U nicht geprüft, ob unterstützt |
 
 ## Bekannte Grenzen

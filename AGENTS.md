@@ -42,6 +42,6 @@
 - `STATUS.md` — aktueller Stand, Entscheidungen, nächste Schritte (wird bei `/close` aktualisiert).
 
 ## Gotchas
-- Unter macOS steuert `IOAVService` nur den Monitor, der per DP-Alt-Mode hängt; `m1ddc display list` zeigt zwei Displays, der FO48U ist Display 2 (Stand 2026-10-30).
+- Unter macOS steuert `IOAVService` nur den Monitor, der per DP-Alt-Mode hängt; `m1ddc display list` zeigt zwei Displays, der FO48U ist Display 2 [gemessen 2026-10-30].
 - Eigene Entpack-Verzeichnisse unter `_analyse/` anlegen, nie im Projektroot entpacken.
 - Das Repo wird öffentlich gedacht: keine Gigabyte-Dateien (ZIP, `_analyse/sidekick|decomp|meta`), keine Seriennummern oder Pfade ins Repo (`.gitignore`).

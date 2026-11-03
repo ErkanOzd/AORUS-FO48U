@@ -37,17 +37,17 @@ Unterschied Windows-Pfad: Im Dekompilat der HID-Variante wird die Prüfsumme ohn
 `m1ddc display 2 get …` bestätigt Helligkeit 75, Kontrast 60, Eingang 16, Lautstärke 8 [gemessen]. `m1ddc` zeigt für USB-C den Rohwert 16, der Herstellerbefehl `E0/2D` liefert 3; die Zuordnung ist nicht weiter untersucht.
 
 ## Schreiben und Werte
-Schreiben getestet (Helligkeit 75→80→75, OverDrive 0→1→0, jeweils zurückgelesen und wiederhergestellt) [gemessen]. Die Windows-Pakete tragen als letztes Byte die Prüfsumme ohne `0x6E` (`51^85^03^E0^sub^00^wert`); am Mac gilt die Standardform mit `0x6E` [Dekompilat / gemessen].
+Schreiben getestet (damals `settest`: Helligkeit 75→80→75, OverDrive 0→1→0, jeweils zurückgelesen und wiederhergestellt) [gemessen]. Die Windows-Pakete tragen als letztes Byte die Prüfsumme ohne `0x6E` (`51^85^03^E0^sub^00^wert`); am Mac gilt die Standardform mit `0x6E` [Dekompilat / gemessen].
 
 Wertetabellen (Gigabyte-Variante, FO48U hat `AOR_GBT_Flag = 0`) [Dekompilat; Eingang Type-C passt zur gemessenen `3`]:
 
 | Sub | Funktion | Werte |
 |---|---|---|
-| `0x2C` | Bildmodus | 0 Standard, 1 FPS, 2 RTS/RPG, 3 Film, 4 Lesen, 5 sRGB, 6 Custom 1, 7 Custom 2, 8 Custom 3 |
+| `0x2C` | Bildmodus | 0 Standard, 1 FPS, 2 RTS/RPG, 3 Film, 4 Lesen, 5 sRGB, 6 Custom 1, 7 Custom 2, 8 Custom 3, 9 unbenannt (Handbuch: vermutlich Grün, ungeprüft) |
 | `0x2D` | Eingang | 0 HDMI 1, 1 HDMI 2, 2 DisplayPort, 3 USB-C |
 | `0x0C` | FreeSync | 0 aus, 1 an |
 | `0x0A` | Aim Stabilizer | 0 aus, 1 an |
-| `0x37` | Fadenkreuz | 0 aus, 1–4 Motiv |
+| `0x37` | Fadenkreuz | 0 aus, 1–4 Motiv (laut Nutzer am FO48U identisch; die App schreibt 1) |
 | `0x22` | Bildwiederholrate einblenden | 0 aus, 1 an |
 | `0x39` | Eagle Eye | 0 aus, 1 an |
 | `0x49` | Night Vision | 0 aus, 1 an |
@@ -59,7 +59,7 @@ Wertetabellen (Gigabyte-Variante, FO48U hat `AOR_GBT_Flag = 0`) [Dekompilat; Ein
 | `0x87` | Schärfe (Standard-VCP) | 0–10 [gemessen: max 10] |
 | `0x09` / `0x02` | OverDrive / Black eQ | Stufen 0…max aus der Abfrage; Namen der Stufen ungeprüft |
 
-Schreiben samt Rücklesen [gemessen 2026-10-30]: Schärfe, Farbtemperatur, Gamma, Aim Stabilizer, Refresh-Anzeige und Fadenkreuz wurden bestätigt (mit der damals schwächeren Antwortprüfung; mit der neuen Prüfung nur Helligkeit und Eingang erneut gelaufen). Eagle Eye (`0x39`) und Night Vision (`0x49`) blieben nach dem Schreiben auf 0. **Korrektur 2026-10-30:** Der Monitor beantwortet Leseanfragen für `E0/39`, `E0/49` und `E0/3A` gar nicht, sondern liefert die Antwort der vorherigen Anfrage erneut (Echo mit der Sub-ID `0x22` bzw. `0x0E`) [gemessen mit Debug-Ausgabe der Rohantwort]. Die frühere Lesart „0/1“ war die Antwort der Refresh-Anzeige, die Aussage „wird nicht angenommen“ ein Messartefakt der damals zu schwachen Antwortprüfung. Ob der FO48U diese Funktionen überhaupt hat, ist offen. Die Antwortprüfung (Sub-ID, Länge, Prüfsumme `0x50 ^ rx[0…9]`) fängt das jetzt ab. Zur Einordnung: Das Dekompilat (`SetEagleEyeON` / `SetNightVisionON` in `RTKCmd_x64.dll`) sendet exakt dasselbe Paket (`03 E0 39 00 01` bzw. `03 E0 49 00 01`) und wartet 150 ms; im Sidekick-Code (`OSD_Interface.cs`, Schnellschalter) steht keine Vorbedingung. Das Web lieferte nichts: Gigabyte-Seiten blockieren Abrufe (HTTP 403), Suchtreffer nennen nur die Funktionsnamen bei anderen AORUS-Modellen (FO32U).
+Schreiben samt Rücklesen [gemessen 2026-10-30]: Schärfe, Farbtemperatur, Gamma, Aim Stabilizer, Refresh-Anzeige und Fadenkreuz wurden bestätigt (mit der damals schwächeren Antwortprüfung; mit der heutigen Prüfung nur Helligkeit und Eingang erneut gelaufen). Der Monitor beantwortet Leseanfragen für `E0/39` (Eagle Eye), `E0/49` (Night Vision) und `E0/3A` (OSD-Größe) nicht, sondern liefert die Antwort der vorherigen Anfrage erneut (Echo mit Sub-ID `0x22` bzw. `0x0E`) [gemessen, Rohantwort]; die Antwortprüfung (Sub-ID, Länge, Prüfsumme `0x50 ^ rx[0…9]`) fängt das ab. Ob der FO48U diese Funktionen hat, ist offen. Das Dekompilat (`SetEagleEyeON` / `SetNightVisionON` in `RTKCmd_x64.dll`) sendet dasselbe Paket (`03 E0 39 00 01` bzw. `03 E0 49 00 01`) und wartet 150 ms; im Sidekick-Code (`OSD_Interface.cs`, Schnellschalter) steht keine Vorbedingung [Dekompilat].
 
 Einordnung durch das Handbuch ([Bedienungsanleitung Deutsch, Stand 2022-02-17](https://download.gigabyte.com/FileList/Manual/AORUS_FO48U_UM_German_20220217.pdf), 50 Seiten, Text per PDFKit gelesen): Das OSD des FO48U nennt weder Eagle Eye noch Night Vision; das Gaming-Menü kennt Aim Stabilizer, Schwarzausgleich, Hohe Auflösung, Display Modus/Position und Adaptive Sync. Das stützt die Vermutung, dass der FO48U beide Funktionen nicht hat, beweist sie aber nicht (Handbuch ≠ Firmware) [Handbuch]. Die OSD-Größe (`E0/3A`) gibt es dagegen: System → OSD Einstellungen → „Größe“ („De-/aktivieren Sie die Anpassung des OSD-Menüfensters“); der Monitor beantwortet die Leseanfrage trotzdem nicht [Handbuch + gemessen]. Die Bildmodus-Liste im OSD endet mit „sRGB, Benutzerdefiniert 1–3, Grün“; die App zeigt Index 5–8 als sRGB/Custom 1–3 und Index 9 als „Level 9“, passend wäre „Grün“ (Energiesparmodus) [ungeprüft: Zuordnung nur aus der Reihenfolge abgeleitet; die Handbuch-Liste ist im Textauszug unvollständig]. Stufennamen für Gamma (Anzeige „22“ im OSD) und Farbtemperatur („Normal“) nennt das Handbuch nicht.
 
