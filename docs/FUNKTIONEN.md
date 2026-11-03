@@ -6,7 +6,7 @@ Belegstufen: **Lesen** = Wert vom Monitor abgefragt und plausibel; **Schreiben**
 
 ## Bedienung
 
-Das Menü zeigt immer Lautstärke (mit Stumm), Helligkeit, Kontrast und Schärfe. Alle anderen Einstellungen liegen im Einstellungsfenster (⌘,) in den Tabs Bild, Gaming, Mac und Allgemein; in Bild und Gaming lässt sich jede Einstellung per Pin zusätzlich im Menü anzeigen (Standard: Bildmodus, Black eQualizer, FreeSync; gespeichert in den Benutzer-Vorgaben). Aufbau am Test-Mac mit Screenshot geprüft (Menü, Tab Bild, Pin an/aus gespeichert); Funktionen anderer Tabs und Pins auf Gaming-Einträge einzeln ungeprüft.
+Die Menü-Kopfzeile zeigt „Verbunden · <aktiver Eingang>“ (aus VCP 0x60); der Tab Allgemein zeigt zusätzlich die Zeile „Verbindung“. Das Menü zeigt immer Lautstärke (mit Stumm), Helligkeit, Kontrast und Schärfe. Alle anderen Einstellungen liegen im Einstellungsfenster (⌘,) in den Tabs Bild, Gaming, Mac und Allgemein; in Bild und Gaming lässt sich jede Einstellung per Pin zusätzlich im Menü anzeigen (Standard: Bildmodus, Black eQualizer, FreeSync; gespeichert in den Benutzer-Vorgaben). Aufbau am Test-Mac mit Screenshot geprüft (Menü, Tab Bild, Pin an/aus gespeichert); Funktionen anderer Tabs und Pins auf Gaming-Einträge einzeln ungeprüft.
 
 ## Im Menü bzw. in den Einstellungen
 

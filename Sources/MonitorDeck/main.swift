@@ -84,7 +84,6 @@ final class Model: ObservableObject {
     @Published var maxes: [Control: Int] = [:]
     @Published var connected: Bool?   // nil = Suche läuft
     @Published var status: String?
-    var volumeBeforeMute = 0
     static let shared = Model()
 
     nonisolated static let shown: [Control] = [.brightness, .contrast, .volume, .sharpness, .pictureMode, .input, .overDrive, .gamma, .blackEQ, .colorTemp, .freeSync, .aimStabilizer, .crosshair, .refreshOSD]
@@ -176,7 +175,7 @@ struct MenuView: View {
         let v = model.values[.volume] ?? 0
         return HStack(spacing: 10) {
             Button {
-                if v > 0 { model.volumeBeforeMute = v; model.set(.volume, 0) } else { model.set(.volume, model.volumeBeforeMute > 0 ? model.volumeBeforeMute : 5) }
+                if v > 0 { KeyJobs.shared.volumeBeforeMute = v; model.set(.volume, 0) } else { model.set(.volume, KeyJobs.shared.volumeBeforeMute ?? 5); KeyJobs.shared.volumeBeforeMute = nil }
             } label: {
                 Image(systemName: v == 0 ? "speaker.slash" : "speaker.wave.2").frame(width: 20)
             }
@@ -199,7 +198,7 @@ struct MenuView: View {
                 HStack {
                     VStack(alignment: .leading, spacing: 1) {
                         Text("AORUS FO48U").font(.headline)
-                        Label(tr("Verbunden", "Connected"), systemImage: "circle.fill").font(.caption).foregroundStyle(.secondary)
+                        Label(tr("Verbunden", "Connected") + (model.values[.input].flatMap { $0 >= 0 && $0 < inputNames.count ? " · " + inputNames[$0] : nil } ?? ""), systemImage: "circle.fill").font(.caption).foregroundStyle(.secondary)
                             .labelStyle(DotLabelStyle())
                     }
                     Spacer()

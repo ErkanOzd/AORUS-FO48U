@@ -73,6 +73,12 @@ final class Autostart: ObservableObject {
 }
 
 extension Model {
+    /// Aktiver Eingang (gemessen, VCP 0x60); bei USB-C mit Hinweis auf den DP-Alt-Mode.
+    var connectionName: String? {
+        guard let v = values[.input], v >= 0, v < inputNames.count else { return nil }
+        return v == 3 ? "USB-C (DP-Alt-Mode)" : inputNames[v]
+    }
+
     func slider(_ c: Control, max: Int = 100) -> some View {
         let b = dragBinding(c)
         return Slider(value: Binding(get: { Double(b.wrappedValue) }, set: { b.wrappedValue = Int($0) }), in: 0...Double(maxes[c] ?? max), step: 1) {
@@ -96,24 +102,39 @@ extension Model {
     func toggle(_ c: Control) -> some View {
         let b = binding(c)
         return Toggle(c.name, isOn: Binding(get: { b.wrappedValue == 1 }, set: { b.wrappedValue = $0 ? 1 : 0 }))
+            .toggleStyle(.switch)
             .disabled(values[c] == nil)
     }
 
     /// Steuerelement eines Eintrags; der Eingang fragt vor dem Wechsel weg von USB-C nach.
-    @ViewBuilder func control(_ item: PinItem) -> some View {
+    @ViewBuilder func control(_ item: PinItem, sliderWidth: CGFloat? = nil) -> some View {
         switch item.kind {
         case .picker(let names): picker(item.control, names, selection: item.control == .input ? inputBinding() : nil)
         case .toggle: toggle(item.control)
         case .slider(let max):
             HStack(spacing: 10) {
                 Text(item.control.name)
-                slider(item.control, max: max)
+                if let w = sliderWidth { slider(item.control, max: max).frame(width: w) } else { slider(item.control, max: max) }
                 Text("\(values[item.control] ?? 0)").monospacedDigit().frame(width: 24, alignment: .trailing)
             }
         }
     }
 
-    func pinnedView(_ item: PinItem) -> some View { control(item) }
+    /// Menüzeile wie im Design: Name links, Auswahlfeld kompakt rechts, 40 pt hoch.
+    @ViewBuilder func pinnedView(_ item: PinItem) -> some View {
+        switch item.kind {
+        case .picker(let names):
+            HStack {
+                Text(item.control.name)
+                Spacer()
+                picker(item.control, names, selection: item.control == .input ? inputBinding() : nil).labelsHidden().fixedSize()
+            }
+            .frame(height: 40)
+        case .toggle:
+            HStack { Text(item.control.name); Spacer(); toggle(item.control).labelsHidden() }.frame(height: 40)
+        case .slider: control(item).frame(height: 40)
+        }
+    }
 }
 
 struct SettingsView: View {
@@ -125,7 +146,7 @@ struct SettingsView: View {
 
     private func pinRow(_ item: PinItem) -> some View {
         HStack {
-            model.control(item)
+            model.control(item, sliderWidth: 130)
             Toggle(isOn: pins.binding(item.control)) {
                 Image(systemName: pins.isPinned(item.control) ? "pin.fill" : "pin")
             }
@@ -185,7 +206,7 @@ struct SettingsView: View {
             }
             }
         }
-        .frame(width: 520, height: 470)
+        .frame(width: 560, height: 500)
     }
 
     private var macTab: some View {
@@ -233,6 +254,7 @@ struct SettingsView: View {
                 }
                 Section {
                     LabeledContent(tr("Monitor", "Monitor"), value: "AORUS FO48U")
+                    if let c = model.connectionName { LabeledContent(tr("Verbindung", "Connection"), value: c) }
                     LabeledContent(tr("Version", "Version"), value: Bundle.main.object(forInfoDictionaryKey: "CFBundleShortVersionString") as? String ?? "–")
                 }
             }

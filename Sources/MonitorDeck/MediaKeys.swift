@@ -125,7 +125,12 @@ final class KeyJobs: @unchecked Sendable {
     private let lock = NSLock()
     private var pending: [Kind: Int] = [:]
     private var scheduled = false
-    private var volumeBeforeMute: Int?
+    private var _volumeBeforeMute: Int?
+    /// Lautstärke vor „Stumm“; gemeinsam für Menü und Tasten (thread-sicher).
+    var volumeBeforeMute: Int? {
+        get { lock.lock(); defer { lock.unlock() }; return _volumeBeforeMute }
+        set { lock.lock(); _volumeBeforeMute = newValue; lock.unlock() }
+    }
 
     func add(_ kind: Kind, delta: Int) {
         lock.lock()
