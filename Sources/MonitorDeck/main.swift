@@ -212,8 +212,6 @@ struct MenuView: View {
                             .labelStyle(DotLabelStyle())
                     }
                     Spacer()
-                    Button { SettingsWindow.show() } label: { Image(systemName: "gearshape").font(.system(size: 15)).frame(width: 32, height: 32).contentShape(Rectangle()) }
-                        .buttonStyle(.plain).foregroundStyle(.secondary).help(tr("Einstellungen (⌘,)", "Settings (⌘,)"))
                 }
                 .padding(.bottom, 4)
                 volumeRow

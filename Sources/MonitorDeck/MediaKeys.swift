@@ -88,9 +88,11 @@ final class MediaKeys: ObservableObject {
         let data = event.data1
         let flags = data & 0xFFFF
         guard let code = Code(rawValue: (data & 0xFFFF0000) >> 16), onMonitor() else { return false }
-        if brightnessViaF, code == .brightnessUp || code == .brightnessDown { return false }
         // Nur Tastendruck (0xA) auslösen, Loslassen aber ebenfalls verschlucken.
         if (flags & 0xFF00) >> 8 == 0xA {
+            // „Systemtasten“ fängt Nx- und F14/F15-Helligkeit ab; sendet eine Tastatur beides, zählt nur die erste Quelle.
+            if (code == .brightnessUp || code == .brightnessDown) && brightnessViaF && recentlyHandled(.fKey) { return true }
+            if code == .brightnessUp || code == .brightnessDown { lastBrightness = (.nx, CACurrentMediaTime()) }
             switch code {
             case .mute: KeyJobs.shared.add(.mute, delta: 0)
             case .soundUp: KeyJobs.shared.add(.volume, delta: volumeStep)
@@ -106,8 +108,19 @@ final class MediaKeys: ObservableObject {
     fileprivate func handleKey(_ cg: CGEvent, down: Bool) -> Bool {
         let code = cg.getIntegerValueField(.keyboardEventKeycode)
         guard brightnessViaF, code == 107 || code == 113, onMonitor() else { return false }
-        if down { KeyJobs.shared.add(.brightness, delta: code == 113 ? brightnessStep : -brightnessStep) }
+        if down, !recentlyHandled(.nx) {
+            lastBrightness = (.fKey, CACurrentMediaTime())
+            KeyJobs.shared.add(.brightness, delta: code == 113 ? brightnessStep : -brightnessStep)
+        }
         return true
+    }
+
+    private enum Source { case nx, fKey }
+    private var lastBrightness: (Source, CFTimeInterval)?
+    /// `true`, wenn dieselbe Helligkeitstaste gerade (< 60 ms) über die andere Quelle ausgelöst wurde.
+    private func recentlyHandled(_ other: Source) -> Bool {
+        guard let l = lastBrightness, l.0 == other else { return false }
+        return CACurrentMediaTime() - l.1 < 0.06
     }
 
     private func onMonitor() -> Bool {
