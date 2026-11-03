@@ -24,7 +24,7 @@ Die Menü-Kopfzeile zeigt „Verbunden · <aktiver Eingang>“ (aus VCP 0x60); d
 | Fadenkreuz, Aim Stabilizer, Refresh-Anzeige | ja | ja | |
 | FreeSync | ja | nicht einzeln geprüft | |
 | Systemwerte im Dashboard | n. a. | ja: CPU-/GPU-Last und SoC-Temperatur alle 2 s; Sichtprüfung am Monitor bestätigt (MacBook Air M5) | Takt/Lüfter nicht lesbar und am Monitor ausgeblendet; Macs mit Lüfter ungeprüft |
-| Tasten steuern Monitor | n. a. | ja: Helligkeits- und Lautstärketasten (Schritt 1–10, getrennt für Helligkeit und Lautstärke, im Tab „Mac“ der Einstellungen (⌘,), Standard 5; Stumm = 0 und zurück; Helligkeitstasten wählbar: „F14 / F15“ (Standard) oder Medientasten), nur wenn der Mauszeiger auf dem Monitor steht; mit echten Tasten bestätigt (MacBook Air, ein FO48U) | Berechtigung „Bedienungshilfen“ nötig; Stumm-Wiederherstellung und Notebook-Display-Verhalten nicht einzeln geprüft; die Berechtigung muss nach jedem Neubau der ad-hoc-signierten App neu erteilt werden |
+| Tasten steuern Monitor | n. a. | ja: Helligkeits- und Lautstärketasten (Schritt 1–10, getrennt für Helligkeit und Lautstärke, im Tab „Mac“ der Einstellungen (⌘,), Standard 5; Stumm = 0 und zurück; Helligkeitstasten wählbar: „Systemtasten“ mit Sonnen-Symbol = F14 / F15 (Standard) oder Medientasten), nur wenn der Mauszeiger auf dem Monitor steht; mit echten Tasten bestätigt (MacBook Air, ein FO48U) | Berechtigung „Bedienungshilfen“ nötig (Erststart-Abfrage fragt einmal, sonst Schalter im Tab „Mac“); Stumm-Wiederherstellung und Notebook-Display-Verhalten nicht einzeln geprüft; die Berechtigung muss nach jedem Neubau der ad-hoc-signierten App neu erteilt werden |
 | Autostart beim Anmelden | n. a. | `--autostart on` meldet „an“ | Start nach Neuanmeldung ungeprüft |
 
 ## Nicht im Menü

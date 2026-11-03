@@ -284,7 +284,7 @@ struct SettingsView: View {
                     }
                     Row(title: tr("Helligkeitstasten", "Brightness keys")) {
                         Picker("", selection: $keys.brightnessViaF) {
-                            Text("F14 / F15").tag(true)
+                            Label(tr("Systemtasten", "System keys"), systemImage: "sun.max").tag(true)
                             Text(tr("Medientasten", "Media keys")).tag(false)
                         }
                         .labelsHidden().fixedSize().disabled(!keys.enabled)

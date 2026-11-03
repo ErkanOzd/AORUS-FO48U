@@ -281,8 +281,23 @@ struct DotLabelStyle: LabelStyle {
     }
 }
 
+/// Einmalige Abfrage beim ersten Start, ob die Tasten den Monitor steuern sollen; „Aktivieren“ löst die Systemabfrage „Bedienungshilfen“ aus.
+@MainActor func askKeysOnce() {
+    let key = "keysAsked"
+    guard Bundle.main.bundleIdentifier != nil, !UserDefaults.standard.bool(forKey: key), !MediaKeys.shared.enabled else { return }
+    UserDefaults.standard.set(true, forKey: key)
+    NSApp.activate(ignoringOtherApps: true)
+    let alert = NSAlert()
+    alert.messageText = tr("Helligkeits- und Lautstärketasten für den Monitor nutzen?", "Use brightness and volume keys for the monitor?")
+    alert.informativeText = tr("Die Tasten steuern den Monitor, solange der Mauszeiger darauf steht. Dafür braucht die App die Berechtigung „Bedienungshilfen“; macOS fragt gleich danach. Die Einstellung lässt sich jederzeit im Tab „Mac“ ändern.", "The keys control the monitor while the pointer is on it. This needs the “Accessibility” permission; macOS asks right after. You can change this at any time in the “Mac” tab.")
+    alert.addButton(withTitle: tr("Aktivieren", "Enable"))
+    alert.addButton(withTitle: tr("Nicht jetzt", "Not now"))
+    guard alert.runModal() == .alertFirstButtonReturn else { return }
+    MediaKeys.shared.start()
+}
+
 struct FO48UApp: App {
-    init() { DispatchQueue.main.async { askAutostartOnce(); if Feeder.shared.enabled { Feeder.shared.start() }; if MediaKeys.shared.enabled { MediaKeys.shared.start() } } }
+    init() { DispatchQueue.main.async { askAutostartOnce(); askKeysOnce(); if Feeder.shared.enabled { Feeder.shared.start() }; if MediaKeys.shared.enabled { MediaKeys.shared.start() } } }
     var body: some Scene {
         MenuBarExtra("MonitorDeck", systemImage: "display") { MenuView() }
             .menuBarExtraStyle(.window)
