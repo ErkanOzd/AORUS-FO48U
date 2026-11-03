@@ -1,12 +1,12 @@
 # Funktionen und Prüfstand
 
-Stand 2026-10-30. Geprüft wurde bisher **nur ein AORUS FO48U** (Firmware vermutlich F06; Deutung, siehe `docs/PROTOKOLL.md`, Abschnitt „Sub-IDs für `0xE0`“) per USB-C (DisplayPort-Alt-Mode) an einem Apple-Silicon-Mac. Alle anderen Monitore, Anschlüsse und Mac-Modelle sind ungeprüft.
+Stand 2026-11-03. Geprüft wurde bisher **nur ein AORUS FO48U** (Firmware vermutlich F06; Deutung, siehe `docs/PROTOKOLL.md`, Abschnitt „Sub-IDs für `0xE0`“) per USB-C (DisplayPort-Alt-Mode) an einem Apple-Silicon-Mac. Alle anderen Monitore, Anschlüsse und Mac-Modelle sind ungeprüft.
 
 Belegstufen: **Lesen** = Wert vom Monitor abgefragt und plausibel; **Schreiben** = Wert gesetzt und vom Monitor zurückgelesen (`Monitor.write`); **Menü** = in der Menüleisten-App bedient. Antworten werden auf Sub-ID, Länge und Prüfsumme geprüft. Die Schreibtests von Schärfe, Farbtemperatur, Gamma, Aim Stabilizer, Refresh-Anzeige und Fadenkreuz liefen vor dieser Prüfung; mit ihr wurden nur Helligkeit und Eingang erneut getestet. Nichts davon ist am Monitor-OSD gegengelesen, soweit nicht anders vermerkt.
 
 ## Bedienung
 
-Die Menü-Kopfzeile zeigt „Verbunden · <aktiver Eingang>“ (aus VCP 0x60); der Tab Allgemein zeigt zusätzlich die Zeile „Verbindung“. Das Menü zeigt immer Lautstärke (mit Stumm), Helligkeit, Kontrast und Schärfe. Alle anderen Einstellungen liegen im Einstellungsfenster (⌘,) in den Tabs Bild, Gaming, Mac und Allgemein; in Bild und Gaming lässt sich jede Einstellung per Pin zusätzlich im Menü anzeigen (Standard: Bildmodus, Black eQualizer, FreeSync; gespeichert in den Benutzer-Vorgaben). Aufbau am Test-Mac mit Screenshot geprüft (Menü, Tab Bild, Pin an/aus gespeichert); Funktionen anderer Tabs und Pins auf Gaming-Einträge einzeln ungeprüft.
+Die Menü-Kopfzeile zeigt „Verbunden · <aktiver Eingang>“ (aus VCP 0x60); der Tab Allgemein zeigt zusätzlich die Zeile „Verbindung“. Das Menü zeigt immer Lautstärke (mit Stumm), Helligkeit, Kontrast und Schärfe. Alle anderen Einstellungen liegen im Einstellungsfenster (⌘,) in den Tabs Bild, Gaming, Mac und Allgemein; in Bild und Gaming lässt sich jede Einstellung per Pin zusätzlich im Menü anzeigen (Standard: Bildmodus, Black eQualizer, FreeSync; gespeichert in den Benutzer-Vorgaben). Menü und Einstellungen (Karten, 44-pt-Zeilen, Pin je Zeile, Systemfarben) am 2026-11-03 gegen den Design-Entwurf abgenommen; Aufbau am Test-Mac mit Screenshot geprüft (Menü, Tab Bild, Pin an/aus gespeichert); Funktionen anderer Tabs und Pins auf Gaming-Einträge einzeln ungeprüft.
 
 ## Im Menü bzw. in den Einstellungen
 
@@ -24,7 +24,7 @@ Die Menü-Kopfzeile zeigt „Verbunden · <aktiver Eingang>“ (aus VCP 0x60); d
 | Fadenkreuz, Aim Stabilizer, Refresh-Anzeige | ja | ja | |
 | FreeSync | ja | nicht einzeln geprüft | |
 | Systemwerte im Dashboard | n. a. | ja: CPU-/GPU-Last und SoC-Temperatur alle 2 s; Sichtprüfung am Monitor bestätigt (MacBook Air M5) | Takt/Lüfter nicht lesbar und am Monitor ausgeblendet; Macs mit Lüfter ungeprüft |
-| Tasten steuern Monitor | n. a. | ja: Helligkeits- und Lautstärketasten (Schritt 1–10, getrennt für Helligkeit und Lautstärke, im Tab „Mac“ der Einstellungen (⌘,), Standard 5; Stumm = 0 und zurück; Helligkeitstasten wählbar: Systemtasten (Sonnen-Symbol; am Test-Mac F14/F15) oder Medientasten), nur wenn der Mauszeiger auf dem Monitor steht; mit echten Tasten bestätigt (MacBook Air, ein FO48U) | Berechtigung „Bedienungshilfen“ nötig; Stumm-Wiederherstellung und Notebook-Display-Verhalten nicht einzeln geprüft; die Berechtigung muss nach jedem Neubau der ad-hoc-signierten App neu erteilt werden |
+| Tasten steuern Monitor | n. a. | ja: Helligkeits- und Lautstärketasten (Schritt 1–10, getrennt für Helligkeit und Lautstärke, im Tab „Mac“ der Einstellungen (⌘,), Standard 5; Stumm = 0 und zurück; Helligkeitstasten wählbar: „F14 / F15“ (Standard) oder Medientasten), nur wenn der Mauszeiger auf dem Monitor steht; mit echten Tasten bestätigt (MacBook Air, ein FO48U) | Berechtigung „Bedienungshilfen“ nötig; Stumm-Wiederherstellung und Notebook-Display-Verhalten nicht einzeln geprüft; die Berechtigung muss nach jedem Neubau der ad-hoc-signierten App neu erteilt werden |
 | Autostart beim Anmelden | n. a. | `--autostart on` meldet „an“ | Start nach Neuanmeldung ungeprüft |
 
 ## Nicht im Menü

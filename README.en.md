@@ -2,7 +2,7 @@
 
 A macOS menu bar app (Apple Silicon) that controls the **Gigabyte AORUS FO48U** over DDC/CI. It is an alternative to the Windows-only "OSD Sidekick". German version: [`README.md`](README.md).
 
-> **Beta (0.1.x):** feature set largely complete, but tested with one monitor and one Mac only.
+> **Beta (0.2.x):** feature set largely complete, but tested with one monitor and one Mac only.
 >
 > Unofficial project, not affiliated with GIGABYTE. "GIGABYTE" and "AORUS" are trademarks of their owners. Use at your own risk (see Notes).
 

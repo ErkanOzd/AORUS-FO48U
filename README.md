@@ -4,13 +4,13 @@
 
 Menüleisten-App für macOS (Apple Silicon), die den **Gigabyte AORUS FO48U** per DDC/CI steuert, als Ersatz für den Windows-only „OSD Sidekick“. *English: a macOS menu bar app that controls the Gigabyte AORUS FO48U monitor over DDC/CI, replacing the Windows-only OSD Sidekick.*
 
-> **Beta (0.1.x):** Funktionsumfang weitgehend vollständig, aber nur mit einem Monitor und einem Mac getestet.
+> **Beta (0.2.x):** Funktionsumfang weitgehend vollständig, aber nur mit einem Monitor und einem Mac getestet.
 >
 > Inoffizielles Projekt, nicht mit GIGABYTE verbunden. „GIGABYTE“ und „AORUS“ sind Marken ihrer Inhaber. Nutzung auf eigene Gefahr (siehe Hinweise).
 
 ## Funktionen
 
-Helligkeit, Kontrast, Lautstärke, Schärfe, Black eQualizer, Bildmodus, Eingang, OverDrive, Gamma, Farbtemperatur, Fadenkreuz, FreeSync, Aim Stabilizer, Refresh-Anzeige, Systemwerte im Dashboard des Monitors, Helligkeits- und Lautstärketasten (wenn der Mauszeiger auf dem Monitor steht; braucht die Berechtigung „Bedienungshilfen“), Autostart beim Anmelden. Jeder Schreibvorgang wird zurückgelesen und bis zu dreimal wiederholt; zeigt der Monitor einen anderen Wert, übernimmt die Anzeige den gemeldeten Wert und weist darauf hin. Nach einem Eingangswechsel sucht die App den DDC-Dienst am selben Anschluss neu. Schieberegler schreiben erst beim Loslassen; der DDC-Zugriff läuft nicht auf dem Main-Thread. Bei mehreren externen Monitoren wählt die App den, der Helligkeit, Eingang und Bildmodus beantwortet (Heuristik).
+Helligkeit, Kontrast, Lautstärke, Schärfe, Black eQualizer, Bildmodus, Eingang, OverDrive, Gamma, Farbtemperatur, Fadenkreuz, FreeSync, Aim Stabilizer, Refresh-Anzeige, Systemwerte im Dashboard des Monitors, Helligkeits- und Lautstärketasten (wenn der Mauszeiger auf dem Monitor steht; braucht die Berechtigung „Bedienungshilfen“), Autostart beim Anmelden. Menü und Einstellungen (⌘,) mit den Tabs Bild, Gaming, Mac und Allgemein; jede Einstellung lässt sich per Pin zusätzlich ins Menü holen. Jeder Schreibvorgang wird zurückgelesen und bis zu dreimal wiederholt; zeigt der Monitor einen anderen Wert, übernimmt die Anzeige den gemeldeten Wert und weist darauf hin. Nach einem Eingangswechsel sucht die App den DDC-Dienst am selben Anschluss neu. Schieberegler schreiben erst beim Loslassen; der DDC-Zugriff läuft nicht auf dem Main-Thread. Bei mehreren externen Monitoren wählt die App den, der Helligkeit, Eingang und Bildmodus beantwortet (Heuristik).
 
 Die Oberfläche ist zweisprachig: Deutsch bei deutscher Systemsprache, sonst Englisch (*the UI is German on a German system, English otherwise*). Die README gibt es auf Deutsch und Englisch ([`README.en.md`](README.en.md)); die Dokumente unter `docs/` sind Deutsch.
 
