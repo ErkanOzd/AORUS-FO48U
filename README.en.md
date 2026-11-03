@@ -32,7 +32,7 @@ open ~/Applications/"MonitorDeck.app"
 scripts/make-dmg.sh                        # optional: builds dist/MonitorDeck-<version>.dmg
 ```
 
-On first launch the app asks once whether it should start at login. You can change this with the "Launch at login" switch in the menu or with `MonitorDeck.app/Contents/MacOS/MonitorDeck --autostart on|off` (must run from the app bundle). After a rebuild or after moving the app the login item may need to be set again (unverified).
+On first launch the app asks once whether it should start at login. You can change this with the "Launch at login" switch in the settings (⌘,), tab "General", or with `MonitorDeck.app/Contents/MacOS/MonitorDeck --autostart on|off` (must run from the app bundle). After a rebuild or after moving the app the login item may need to be set again (unverified).
 
 Without an app bundle: `swift build && .build/debug/MonitorDeck`.
 

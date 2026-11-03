@@ -84,6 +84,8 @@ final class Model: ObservableObject {
     @Published var maxes: [Control: Int] = [:]
     @Published var connected: Bool?   // nil = Suche läuft
     @Published var status: String?
+    var volumeBeforeMute = 0
+    static let shared = Model()
 
     nonisolated static let shown: [Control] = [.brightness, .contrast, .volume, .sharpness, .pictureMode, .input, .overDrive, .gamma, .blackEQ, .colorTemp, .freeSync, .aimStabilizer, .crosshair, .refreshOSD]
 
@@ -151,97 +153,104 @@ final class Model: ObservableObject {
 }
 
 struct MenuView: View {
-    @StateObject private var model = Model()
-    @ObservedObject private var feeder = Feeder.shared
+    @ObservedObject private var model = Model.shared
     @ObservedObject private var keys = MediaKeys.shared
-    @State private var autostart = SMAppService.mainApp.status == .enabled
-    @State private var autostartNote: String?
+    @ObservedObject private var pins = Pins.shared
 
-    private func updateAutostart() {
-        let st = SMAppService.mainApp.status
-        autostart = st == .enabled
-        if st == .requiresApproval { autostartNote = tr("Freigabe nötig: Systemeinstellungen → Allgemein → Anmeldeobjekte.", "Approval needed: System Settings → General → Login Items.") }
-    }
+    private var pinned: [PinItem] { PinItem.all.filter { pins.isPinned($0.control) } }
 
-    private func setAutostart(_ on: Bool) {
-        autostartNote = nil
-        do {
-            if on { try SMAppService.mainApp.register() } else { try SMAppService.mainApp.unregister() }
-        } catch {
-            autostartNote = tr("Autostart", "Launch at login") + ": \(error.localizedDescription)"
+    private func sliderRow(_ c: Control, icon: String, max: Int = 100) -> some View {
+        HStack(spacing: 10) {
+            Group {
+                if icon == "sharpness" { SharpnessIcon().stroke(style: StrokeStyle(lineWidth: 1.6, lineCap: .round, lineJoin: .round)).frame(width: 15, height: 15) }
+                else { Image(systemName: icon) }
+            }
+            .frame(width: 20).foregroundStyle(.secondary).help(c.name)
+            model.slider(c, max: max)
+            Text("\(model.values[c] ?? 0)").monospacedDigit().frame(width: 30, alignment: .trailing)
         }
-        updateAutostart()
+        .frame(height: 30)
     }
 
-    private func slider(_ c: Control, max: Int = 100) -> some View {
-        let b = model.dragBinding(c)
-        return Slider(value: Binding(get: { Double(b.wrappedValue) }, set: { b.wrappedValue = Int($0) }), in: 0...Double(model.maxes[c] ?? max), step: 1) {
-            Text(c.name)
-        } onEditingChanged: { editing in
-            if !editing { model.set(c, b.wrappedValue) }
+    private var volumeRow: some View {
+        let v = model.values[.volume] ?? 0
+        return HStack(spacing: 10) {
+            Button {
+                if v > 0 { model.volumeBeforeMute = v; model.set(.volume, 0) } else { model.set(.volume, model.volumeBeforeMute > 0 ? model.volumeBeforeMute : 5) }
+            } label: {
+                Image(systemName: v == 0 ? "speaker.slash" : "speaker.wave.2").frame(width: 20)
+            }
+            .buttonStyle(.borderless).foregroundStyle(.secondary).help(tr("Stumm (0 und zurück)", "Mute (0 and back)"))
+            .disabled(model.values[.volume] == nil)
+            model.slider(.volume)
+            Text("\(v)").monospacedDigit().frame(width: 30, alignment: .trailing)
         }
-        .disabled(model.values[c] == nil)
-    }
-
-    /// Alle vom Monitor gemeldeten Stufen; unbenannte erscheinen als „Stufe N“.
-    private func picker(_ c: Control, _ names: [String], selection: Binding<Int>? = nil) -> some View {
-        let top = model.maxes[c] ?? names.count - 1
-        return Picker(c.name, selection: selection ?? model.binding(c)) {
-            ForEach(0...Swift.max(top, 0), id: \.self) { Text($0 < names.count ? names[$0] : tr("Stufe", "Level") + " \($0)").tag($0) }
-        }
-        .disabled(model.values[c] == nil)
-    }
-
-    private func toggle(_ c: Control) -> some View {
-        let b = model.binding(c)
-        return Toggle(c.name, isOn: Binding(get: { b.wrappedValue == 1 }, set: { b.wrappedValue = $0 ? 1 : 0 }))
-            .disabled(model.values[c] == nil)
+        .frame(height: 30)
     }
 
     var body: some View {
-        VStack(alignment: .leading, spacing: 8) {
+        VStack(alignment: .leading, spacing: 6) {
             if model.connected == nil {
                 Text(tr("Suche Monitor …", "Looking for monitor …"))
             } else if model.connected == false {
                 Text(tr("Kein passender Monitor gefunden", "No matching monitor found"))
                 Button(tr("Erneut suchen", "Search again")) { model.refresh() }
             } else {
-                slider(.brightness)
-                slider(.contrast)
-                slider(.volume)
-                slider(.sharpness, max: 10)
-                slider(.blackEQ, max: 20)
-                picker(.pictureMode, modes)
-                picker(.input, inputNames, selection: model.inputBinding())
-                picker(.overDrive, overDriveNames)
-                picker(.gamma, gammaNames)
-                picker(.colorTemp, colorTempNames)
-                picker(.crosshair, crosshairNames)
-                toggle(.freeSync)
-                toggle(.aimStabilizer)
-                toggle(.refreshOSD)
-                Divider()
-                Toggle(tr("Systemwerte im Dashboard", "System stats on dashboard"), isOn: Binding(get: { feeder.enabled }, set: { $0 ? feeder.start() : feeder.stop() }))
-                if let note = feeder.note { Text(note).font(.caption).foregroundStyle(.secondary) }
-                Toggle(tr("Tasten steuern Monitor", "Keys control monitor"), isOn: Binding(get: { keys.enabled }, set: { $0 ? keys.start() : keys.stop() }))
-                if let note = keys.note { Text(note).font(.caption).foregroundStyle(.secondary) }
-                if keys.enabled {
-                    Picker(tr("Helligkeitstasten", "Brightness keys"), selection: $keys.brightnessViaF) {
-                        Text("F14 / F15").tag(true)
-                        Text(tr("Medientasten", "Media keys")).tag(false)
+                HStack {
+                    VStack(alignment: .leading, spacing: 1) {
+                        Text("AORUS FO48U").font(.headline)
+                        Label(tr("Verbunden", "Connected"), systemImage: "circle.fill").font(.caption).foregroundStyle(.secondary)
+                            .labelStyle(DotLabelStyle())
                     }
+                    Spacer()
+                    Button { SettingsWindow.show() } label: { Image(systemName: "gearshape") }
+                        .buttonStyle(.borderless).help(tr("Einstellungen (⌘,)", "Settings (⌘,)"))
                 }
-                Button(tr("Werte neu lesen", "Reload values")) { model.refresh() }
-                Button(tr("Einstellungen …", "Settings …")) { SettingsWindow.show() }.keyboardShortcut(",")
+                volumeRow
+                sliderRow(.brightness, icon: "sun.max")
+                sliderRow(.contrast, icon: "circle.righthalf.filled")
+                sliderRow(.sharpness, icon: "sharpness", max: 10)
+                if !pinned.isEmpty {
+                    Divider()
+                    Text(tr("Angepinnt", "Pinned")).font(.caption).foregroundStyle(.secondary).textCase(.uppercase)
+                    ForEach(pinned, id: \.control) { item in model.pinnedView(item) }
+                }
+                if let note = keys.note { Text(note).font(.caption).foregroundStyle(.secondary) }
                 if let status = model.status { Text(status).font(.caption).foregroundStyle(.secondary) }
             }
-            Toggle(tr("Beim Anmelden starten", "Launch at login"), isOn: Binding(get: { autostart }, set: setAutostart))
-            if let note = autostartNote { Text(note).font(.caption).foregroundStyle(.secondary) }
-            Button(tr("Beenden", "Quit")) { NSApplication.shared.terminate(nil) }
+            Divider()
+            Button { SettingsWindow.show() } label: {
+                HStack { Text(tr("Einstellungen …", "Settings …")); Spacer(); Text("⌘,").foregroundStyle(.secondary) }.contentShape(Rectangle())
+            }
+            .buttonStyle(.plain).keyboardShortcut(",")
+            Button { NSApplication.shared.terminate(nil) } label: {
+                HStack { Text(tr("Beenden", "Quit")); Spacer(); Text("⌘Q").foregroundStyle(.secondary) }.contentShape(Rectangle())
+            }
+            .buttonStyle(.plain).keyboardShortcut("q")
         }
-        .padding(12)
-        .frame(width: 280)
-        .onAppear { model.refresh(); updateAutostart() }
+        .padding(14)
+        .frame(width: 300)
+        .onAppear { model.refresh() }
+    }
+}
+
+/// Schärfe-Symbol wie im Design: Dreieck mit senkrechter Mittellinie.
+struct SharpnessIcon: Shape {
+    func path(in r: CGRect) -> Path {
+        var p = Path()
+        p.move(to: CGPoint(x: r.midX, y: r.minY)); p.addLine(to: CGPoint(x: r.maxX, y: r.maxY))
+        p.addLine(to: CGPoint(x: r.minX, y: r.maxY)); p.closeSubpath()
+        p.move(to: CGPoint(x: r.midX, y: r.minY)); p.addLine(to: CGPoint(x: r.midX, y: r.maxY))
+        return p
+    }
+}
+
+struct DotLabelStyle: LabelStyle {
+    func makeBody(configuration: Configuration) -> some View {
+        HStack(spacing: 6) {
+            Circle().fill(.green).frame(width: 7, height: 7)
+            configuration.title
+        }
     }
 }
 
@@ -264,40 +273,6 @@ struct MenuView: View {
         fail.messageText = tr("Autostart konnte nicht eingerichtet werden", "Could not set up launch at login")
         fail.informativeText = error.localizedDescription
         fail.runModal()
-    }
-}
-
-struct SettingsView: View {
-    @ObservedObject var keys = MediaKeys.shared
-    var body: some View {
-        VStack(alignment: .leading, spacing: 8) {
-            Stepper(value: $keys.brightnessStep, in: 1...10) {
-                Text(tr("Helligkeit, Schritt pro Taste: \(keys.brightnessStep)", "Brightness, step per key: \(keys.brightnessStep)"))
-            }
-            Stepper(value: $keys.volumeStep, in: 1...10) {
-                Text(tr("Lautstärke, Schritt pro Taste: \(keys.volumeStep)", "Volume, step per key: \(keys.volumeStep)"))
-            }
-            Text(tr("Gilt, wenn der Mauszeiger auf dem Monitor steht.", "Applies while the pointer is on the monitor.")).font(.caption).foregroundStyle(.secondary).fixedSize(horizontal: false, vertical: true)
-        }
-        .padding(20)
-        .frame(width: 360)
-    }
-}
-
-/// Eigenes Einstellungsfenster (⌘, im Menü), da die App ohne Dock-Symbol läuft.
-@MainActor enum SettingsWindow {
-    private static var window: NSWindow?
-    static func show() {
-        if window == nil {
-            let w = NSWindow(contentViewController: NSHostingController(rootView: SettingsView()))
-            w.title = tr("MonitorDeck Einstellungen", "MonitorDeck Settings")
-            w.styleMask = [.titled, .closable]
-            w.isReleasedWhenClosed = false
-            w.center()
-            window = w
-        }
-        NSApp.activate(ignoringOtherApps: true)
-        window?.makeKeyAndOrderFront(nil)
     }
 }
 

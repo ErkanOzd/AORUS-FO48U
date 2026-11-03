@@ -34,7 +34,7 @@ open ~/Applications/"MonitorDeck.app"
 scripts/make-dmg.sh                        # optional: baut dist/MonitorDeck-<Version>.dmg
 ```
 
-Die App ist nicht notarisiert; beim ersten Start siehe oben. Beim ersten Start fragt die App einmalig, ob sie beim Anmelden starten soll. Autostart: Schalter „Beim Anmelden starten“ im Menü oder `MonitorDeck.app/Contents/MacOS/MonitorDeck --autostart on|off` (muss aus dem App-Bundle laufen). Nach einem Neubau oder Verschieben der App kann der Eintrag neu gesetzt werden müssen (ungeprüft).
+Die App ist nicht notarisiert; beim ersten Start siehe oben. Beim ersten Start fragt die App einmalig, ob sie beim Anmelden starten soll. Autostart: Schalter „Beim Anmelden starten“ in den Einstellungen (⌘,), Tab „Allgemein“ oder `MonitorDeck.app/Contents/MacOS/MonitorDeck --autostart on|off` (muss aus dem App-Bundle laufen). Nach einem Neubau oder Verschieben der App kann der Eintrag neu gesetzt werden müssen (ungeprüft).
 
 Ohne App-Bundle: `swift build && .build/debug/MonitorDeck`.
 
