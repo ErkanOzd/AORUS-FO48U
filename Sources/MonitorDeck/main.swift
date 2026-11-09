@@ -70,6 +70,9 @@ final class Worker: @unchecked Sendable {
             work(self.monitor)
         }
     }
+
+    /// Vergisst den Monitor; der nächste Auftrag sucht an allen Anschlüssen neu (nach Abstecken oder Umstecken).
+    func reset() { queue.async { self.monitor = nil } }
 }
 
 /// Gemeinsame DDC-Queue für Menü und Dashboard (nie zwei Zugriffe gleichzeitig).
@@ -94,23 +97,36 @@ final class Model: ObservableObject {
     /// Gerade gezogene Schieberegler: Neulesen lässt sie in Ruhe.
     var dragging: Set<Control> = []
 
-    init() { Task { await refresh() } }
-
     /// Liest `controls` nacheinander, je Wert ein eigener Auftrag auf der DDC-Queue (ein Schreibwunsch wartet höchstens einen Lesevorgang).
-    func refresh(_ controls: [Control] = Model.shown, clearStatus: Bool = true) async {
+    /// Antwortet kein einziger Wert, gilt der Monitor als getrennt und wird beim nächsten Durchlauf an allen Anschlüssen neu gesucht.
+    func refresh(_ controls: [Control], clearStatus: Bool = true) async {
         let snapshot = epoch
-        let elsewhere = AudioOutput.isMonitor() ? nil : AudioOutput.name() ?? tr("anderes Gerät", "another device")
+        let elsewhere = AudioOutput.isMonitorCached() ? nil : AudioOutput.name() ?? tr("anderes Gerät", "another device")
         if audioElsewhere != elsewhere { audioElsewhere = elsewhere }
         let found = await withCheckedContinuation { cont in worker.run { cont.resume(returning: $0 != nil) } }
-        connected = found
+        if connected != found { connected = found }
         guard found else { return }
-        if clearStatus { status = nil }
+        if clearStatus, status != nil { status = nil }
+        var answered = 0
         for c in controls {
+            if Task.isCancelled { return }
             let r = await withCheckedContinuation { cont in worker.run { cont.resume(returning: $0?.read(c)) } }
+            if r != nil { answered += 1 }
             guard let r, epoch[c] == snapshot[c], !dragging.contains(c) else { continue }
             if values[c] != r.current { values[c] = r.current }
             if maxes[c] != r.max { maxes[c] = r.max }
+            if c == .brightness || c == .volume { KeyJobs.shared.remember(c, r.current, r.max) }
         }
+        if !controls.isEmpty, answered == 0, !Task.isCancelled {
+            worker.reset()
+            connected = false
+        }
+    }
+
+    /// Einen Wert neu lesen (z. B. nach einem fehlgeschlagenen Tastendruck).
+    func reread(_ c: Control) {
+        epoch[c, default: 0] += 1
+        Task { await refresh([c], clearStatus: false) }
     }
 
     // MARK: Live-Aktualisierung
@@ -140,6 +156,13 @@ final class Model: ObservableObject {
         }
     }
 
+    /// Wert, den die Tastensteuerung gerade gesetzt hat: sofort anzeigen; ältere Lesewerte überschreiben ihn nicht.
+    func external(_ c: Control, _ value: Int, _ max: Int) {
+        epoch[c, default: 0] += 1
+        if values[c] != value { values[c] = value }
+        if maxes[c] != max { maxes[c] = max }
+    }
+
     /// Schreibt `v` mit Rücklesen. Angezeigt wird, was der Monitor meldet; bei Ablehnung der zurückgelesene Wert.
     func set(_ c: Control, _ v: Int) {
         let old = values[c]
@@ -152,7 +175,9 @@ final class Model: ObservableObject {
             if case .rejected(let actual) = result, let b = before, actual != b { m?.write(c, b) }
             Task { @MainActor in
                 switch result {
-                case .confirmed: self.status = nil
+                case .confirmed:
+                    self.status = nil
+                    if c == .brightness || c == .volume { KeyJobs.shared.remember(c, v, self.maxes[c] ?? 100) }
                 case .unconfirmed: self.status = tr("\(c.name): gesendet, vom Monitor nicht bestätigt", "\(c.name): sent, not confirmed by the monitor")
                 case .rejected(let actual):
                     self.values[c] = before ?? actual ?? old
@@ -214,7 +239,7 @@ struct MenuView: View {
         let v = model.values[.volume] ?? 0
         return HStack(spacing: 10) {
             Button {
-                if v > 0 { KeyJobs.shared.volumeBeforeMute = v; model.set(.volume, 0) } else { model.set(.volume, KeyJobs.shared.volumeBeforeMute ?? 5); KeyJobs.shared.volumeBeforeMute = nil }
+                model.set(.volume, KeyJobs.shared.toggleMute(current: v))
             } label: {
                 Image(systemName: v == 0 ? "speaker.slash" : "speaker.wave.2").frame(width: 20)
             }
@@ -284,6 +309,8 @@ struct WindowVisibility: NSViewRepresentable {
     let onChange: @MainActor (Bool) -> Void
     func makeNSView(context: Context) -> Probe { Probe(onChange) }
     func updateNSView(_ view: Probe, context: Context) {}
+    /// Wird die View entfernt, ohne vorher das Fenster zu verlassen, gilt sie als unsichtbar (sonst liefe das Lesen weiter).
+    static func dismantleNSView(_ view: Probe, coordinator: ()) { view.detach() }
 
     final class Probe: NSView {
         private let onChange: @MainActor (Bool) -> Void
@@ -301,6 +328,12 @@ struct WindowVisibility: NSViewRepresentable {
                 }
             }
             update()
+        }
+
+        func detach() {
+            if let token { NotificationCenter.default.removeObserver(token) }
+            token = nil
+            if last == true { last = false; onChange(false) }
         }
 
         private func update() {

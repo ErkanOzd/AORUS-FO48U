@@ -1,3 +1,4 @@
+import AppKit
 import CoreAudio
 import CoreGraphics
 
@@ -16,6 +17,30 @@ enum AudioOutput {
         let models = monitorModels()
         if models.contains(where: { m in [m, m.byteSwapped].contains { uid.hasPrefix(String(format: "%04X%04X", vendor, $0)) } }) { return true }
         return !models.isEmpty && string(dev, kAudioObjectPropertyManufacturer) == "GBT"
+    }
+
+    @MainActor private static var cached: Bool?
+    @MainActor private static var listening = false
+
+    /// Wie `isMonitor`, aber zwischengespeichert (der Event-Tap fragt bei jedem Tastendruck). Verworfen wird der Wert,
+    /// wenn macOS ein anderes Ausgabegerät wählt, Geräte hinzukommen oder wegfallen oder sich die Displays ändern.
+    @MainActor static func isMonitorCached() -> Bool {
+        if !listening {
+            listening = true
+            for sel in [kAudioHardwarePropertyDefaultOutputDevice, kAudioHardwarePropertyDevices] {
+                var a = address(sel)
+                AudioObjectAddPropertyListenerBlock(AudioObjectID(kAudioObjectSystemObject), &a, .main) { _, _ in
+                    MainActor.assumeIsolated { cached = nil }
+                }
+            }
+            NotificationCenter.default.addObserver(forName: NSApplication.didChangeScreenParametersNotification, object: nil, queue: .main) { _ in
+                MainActor.assumeIsolated { cached = nil }
+            }
+        }
+        if let cached { return cached }
+        let v = isMonitor()
+        cached = v
+        return v
     }
 
     /// Name der Standard-Tonausgabe (z. B. „MacBook Air-Lautsprecher“).

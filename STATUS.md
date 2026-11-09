@@ -1,6 +1,6 @@
 # Status – AORUS FO48U
 
-**Stand:** 2026-11-09 · **Version:** 0.2.4 (Beta, Pre-release)
+**Stand:** 2026-11-09 · **Version:** 0.3.0 (Beta, Pre-release)
 
 ## Aktueller Fokus / Phase
 - Ziel: Gigabyte-Sidekick (Monitor-Steuerung) für macOS nachbauen. Die Gigabyte-Suite im ZIP dient nur als Analysequelle.
@@ -23,10 +23,13 @@
 - 0.2.2: „Systemtasten“ fängt Nx und F14/F15 ab (die interne Tastatur sendet Helligkeit als Nx-Code 2/3, eine andere Tastatur als F14/F15, Keycode 107/113 [gemessen 2026-11-03]; erste Quelle zählt, 60 ms); Zahnrad in der Menü-Kopfzeile entfernt.
 - 0.2.3: Steuerung startet selbst, sobald „Bedienungshilfen“ erteilt ist (1-s-Timer).
 - 0.2.4: Fadenkreuz nur Ein/Aus (Motive 1–4 identisch laut Nutzer, schreibt 1); Lautstärke und Stumm unabhängig von der Mausposition, Helligkeit nur bei Zeiger auf dem Monitor; keine Standard-Pins.
-- Live-Werte (2026-11-09, noch ohne Versionsnummer): Menü und Einstellungen lesen beim Öffnen sofort und danach laufend (1 s Pause), geschlossen gar nicht; Ziehen eines Reglers wird nicht überschrieben. Knöpfe „Neu lesen“ und „Erneut suchen“ entfallen. Belegt am Monitor (Helligkeit extern geändert, Menü zog nach; `sample` zeigt keine DDC-Zugriffe bei geschlossenem Menü). UX-Leitlinien: `.claude/rules/ux.md`.
+- 0.3.0 – Live-Werte: Menü und Einstellungen lesen beim Öffnen sofort und danach laufend (1 s Pause), geschlossen gar nicht; Ziehen eines Reglers wird nicht überschrieben. Knöpfe „Neu lesen“ und „Erneut suchen“ entfallen. Belegt am Monitor (Helligkeit extern geändert, Menü zog nach; `sample` zeigt keine DDC-Zugriffe bei geschlossenem Menü). UX-Leitlinien: `.claude/rules/ux.md`.
 - Lautstärke-/Stummtasten nur bei Tonausgabe über den Monitor, sonst regelt macOS; eigenes OSD für Helligkeit und Lautstärke (System-OSD für DDC-Monitore nicht nutzbar). Belegt mit simulierten Tasten und Bildschirmaufnahmen (2026-11-09), Details `docs/FUNKTIONEN.md`, Abschnitt „Tonausgabe und OSD“.
 - `scripts/install.sh` (bauen, `/Applications` ersetzen, starten); OSD pixelgenau ans System-OSD angeglichen (Werte im Kopfkommentar von `OSD.swift`); blauer Fokusrahmen auf dem ersten Einstellungs-Tab entfernt (2026-11-09, per Bildschirmaufnahme geprüft).
-- Unverifiziert: Tastenwirkung der Versionen 0.2.2–0.2.4 am Bildschirm, Stumm-Wiederherstellung, Autostart nach Neuanmeldung (Klick auf „Beim Anmelden starten“), Klickbedienung der Tabs Gaming/Mac/Allgemein.
+- Tastendrücke erscheinen sofort im Menü (offen: nach < 150 ms; geschlossen: beim Öffnen schon aktuell), gemessen 2026-11-09 mit simulierten Tasten. Ein Lesedurchlauf braucht rund 85 ms pro Wert (14 Werte 1219 ms), das Menü liest 5 Werte.
+- 0.3.0 – Review vor der Veröffentlichung (2026-11-09) umgesetzt: Version 0.3.0 (Build 3); Release-Binary ohne Pfade des Build-Rechners (`file-prefix-map`, `strip`, Prüfung in `build-app.sh`; die DMGs 0.2.0–0.2.4 enthielten Benutzername und Projektpfad); Tastendrücke in Reihenfolge, Stumm je Druck; getrennter Monitor wird erkannt und an allen Anschlüssen neu gesucht; kein Lesen mehr beim Start; Einstellungen lesen nur den aktiven Tab; Tonausgabe zwischengespeichert; `install.sh` bricht ab, wenn die alte App noch läuft, und läuft auch ohne vorherige Installation.
+- 0.3.0 geprüft (2026-11-09, simulierte Tasten): drei schnelle Helligkeitsdrücke sofort in Menü und OSD; Stumm+Stumm = unverändert, Stumm dann Lauter = 5, Stumm/Stumm aus = 0/5; Release-Binary ohne `/Users/`-Pfade, Selbsttest mit gestripptem Binary ok; Einstellungen lesen auf Tab „Bild“ nur dessen Werte (Log). Tasten mit OSD vom Nutzer am Gerät bestätigt.
+- Unverifiziert: Erkennung eines abgesteckten Monitors, Lesen nach Tab-Wechsel in den Einstellungen, Autostart nach Neuanmeldung (Klick auf „Beim Anmelden starten“), Klickbedienung der Tabs Gaming/Mac/Allgemein.
 
 ## Nächste Schritte (priorisiert)
 1. Offene Prüfpunkte abarbeiten: `docs/FUNKTIONEN.md`, Abschnitt „Nicht im Menü“ und Prüfstand; Gamma/Farbtemperatur am OSD gegenlesen.

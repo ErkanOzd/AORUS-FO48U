@@ -4,13 +4,13 @@
 
 Menüleisten-App für macOS (Apple Silicon), die den **Gigabyte AORUS FO48U** per DDC/CI steuert, als Ersatz für den Windows-only „OSD Sidekick“.
 
-> **Beta (0.2.x):** Funktionsumfang weitgehend vollständig, aber nur mit einem Monitor und einem Mac getestet.
+> **Beta (0.3):** Funktionsumfang weitgehend vollständig, aber nur mit einem Monitor und einem Mac getestet.
 >
 > Inoffizielles Projekt, nicht mit GIGABYTE verbunden. „GIGABYTE“ und „AORUS“ sind Marken ihrer Inhaber. Nutzung auf eigene Gefahr (siehe Hinweise).
 
 ## Funktionen
 
-Helligkeit, Kontrast, Lautstärke, Schärfe, Black eQualizer, Bildmodus, Eingang, OverDrive, Gamma, Farbtemperatur, Fadenkreuz, FreeSync, Aim Stabilizer, Refresh-Anzeige, Systemwerte im Dashboard des Monitors, Helligkeitstasten (bei Mauszeiger auf dem Monitor) sowie Lautstärke- und Stummtasten, wenn der Ton über den Monitor läuft, jeweils mit eigenem OSD (braucht die Berechtigung „Bedienungshilfen“), Autostart beim Anmelden. Menü und Einstellungen (⌘,) mit den Tabs Bild, Gaming, Mac und Allgemein; jede Einstellung lässt sich per Pin zusätzlich ins Menü holen. Jeder Schreibvorgang wird zurückgelesen und bis zu dreimal wiederholt; zeigt der Monitor einen anderen Wert, übernimmt die Anzeige den gemeldeten Wert und weist darauf hin. Nach einem Eingangswechsel sucht die App den DDC-Dienst am selben Anschluss neu. Werte aktualisieren sich von selbst, solange Menü oder Einstellungen sichtbar sind (sonst liest die App nicht). Schieberegler schreiben erst beim Loslassen; der DDC-Zugriff läuft nicht auf dem Main-Thread. Bei mehreren externen Monitoren wählt die App den, der Helligkeit, Eingang und Bildmodus beantwortet (Heuristik).
+Helligkeit, Kontrast, Lautstärke, Schärfe, Black eQualizer, Bildmodus, Eingang, OverDrive, Gamma, Farbtemperatur, Fadenkreuz, FreeSync, Aim Stabilizer, Refresh-Anzeige, Systemwerte im Dashboard des Monitors, Helligkeitstasten (bei Mauszeiger auf dem Monitor) sowie Lautstärke- und Stummtasten, wenn der Ton über den Monitor läuft, jeweils mit eigenem OSD (braucht die Berechtigung „Bedienungshilfen“), Autostart beim Anmelden. Menü und Einstellungen (⌘,) mit den Tabs Bild, Gaming, Mac und Allgemein; jede Einstellung lässt sich per Pin zusätzlich ins Menü holen. Jeder Schreibvorgang wird zurückgelesen und bis zu dreimal wiederholt; zeigt der Monitor einen anderen Wert, übernimmt die Anzeige den gemeldeten Wert und weist darauf hin. Nach einem Eingangswechsel sucht die App den DDC-Dienst am selben Anschluss neu. Werte aktualisieren sich von selbst: Menü und Einstellungen lesen beim Öffnen sofort und danach laufend, aber nur, solange sie sichtbar sind; Tastendrücke erscheinen sofort im Menü. Wird der Monitor getrennt, zeigt das Menü das und sucht ihn an allen Anschlüssen neu. Schieberegler schreiben erst beim Loslassen; der DDC-Zugriff läuft nicht auf dem Main-Thread. Bei mehreren externen Monitoren wählt die App den, der Helligkeit, Eingang und Bildmodus beantwortet (Heuristik).
 
 Die Oberfläche ist zweisprachig: Deutsch bei deutscher Systemsprache, sonst Englisch (*the UI is German on a German system, English otherwise*). Die README gibt es auf Deutsch und Englisch ([`README.en.md`](README.en.md)); die Dokumente unter `docs/` sind Deutsch.
 
@@ -32,6 +32,8 @@ scripts/install.sh                         # baut, ersetzt /Applications/Monitor
 scripts/build-app.sh                       # nur bauen: dist/MonitorDeck.app
 scripts/make-dmg.sh                        # optional: baut dist/MonitorDeck-<Version>.dmg (immer ad-hoc signiert)
 ```
+
+Wer eine ältere Version nach `~/Applications` kopiert hat, löscht diese Kopie (sonst gibt es zwei Apps mit derselben Bundle-ID, und Autostart oder `open` können die alte starten).
 
 Signatur: Liegt im Schlüsselbund ein Zertifikat „Apple Development“, signiert `build-app.sh` damit; die Freigabe „Bedienungshilfen“ bleibt dann über Neubauten erhalten. Ohne Zertifikat (oder mit `SIGN_IDENTITY=-`) wird ad-hoc signiert, und die Freigabe muss nach jedem Neubau neu erteilt werden. Ändert sich die Signatur, öffnet `install.sh` die Seite „Bedienungshilfen“: MonitorDeck dort aus- und wieder einschalten.
 

@@ -17,8 +17,6 @@ final class MediaKeys: ObservableObject {
         return v == 0 ? 5 : min(max(v, 1), 10)
     }
     private static let fKeysKey = "mediaKeysBrightnessF"
-    /// EISA-Herstellerkennung „GBT“ (Gigabyte): (7<<10)|(2<<5)|20.
-    private static let vendor: UInt32 = 7252
 
     @Published private(set) var enabled = UserDefaults.standard.bool(forKey: MediaKeys.key)
     @Published private(set) var note: String?
@@ -104,7 +102,7 @@ final class MediaKeys: ObservableObject {
         guard let code = Code(rawValue: (data & 0xFFFF0000) >> 16) else { return false }
         // Lautstärke und Stumm nur, wenn der Ton über den Monitor läuft (sonst regelt macOS selbst); Helligkeit nur bei Zeiger auf dem Monitor.
         switch code {
-        case .mute, .soundUp, .soundDown: guard AudioOutput.isMonitor() else { return false }
+        case .mute, .soundUp, .soundDown: guard AudioOutput.isMonitorCached() else { return false }
         case .brightnessUp, .brightnessDown: guard onMonitor() else { return false }
         }
         // Nur Tastendruck (0xA) auslösen, Loslassen aber ebenfalls verschlucken.
@@ -146,86 +144,140 @@ final class MediaKeys: ObservableObject {
         let p = NSEvent.mouseLocation
         guard let screen = NSScreen.screens.first(where: { NSMouseInRect(p, $0.frame, false) }),
               let id = screen.deviceDescription[NSDeviceDescriptionKey("NSScreenNumber")] as? CGDirectDisplayID else { return false }
-        return CGDisplayVendorNumber(id) == Self.vendor
+        return CGDisplayVendorNumber(id) == AudioOutput.vendor
     }
 }
 
-/// Fasst schnelle Tastendrücke (Wiederholung) zusammen und führt sie auf der DDC-Queue mit Rücklesen aus.
-/// Das OSD zeigt sofort den erwarteten Wert und danach den vom Monitor bestätigten.
+/// Führt Tastendrücke in Reihenfolge auf der DDC-Queue mit Rücklesen aus; direkt aufeinanderfolgende Schritte derselben Art
+/// werden zusammengefasst (Tastenwiederholung). OSD und Menü zeigen sofort den erwarteten Wert und danach den bestätigten.
 final class KeyJobs: @unchecked Sendable {
     static let shared = KeyJobs()
     enum Kind { case brightness, volume, mute }
+    /// Lautstärke nach „Stumm aus“, wenn kein Vorwert bekannt ist.
+    static let unmuteDefault = 5
+
+    private enum Job { case step(Control, Int), setVolume(Int), toggleMute }
     private let lock = NSLock()
-    private var pending: [Kind: Int] = [:]
+    private var queue: [Job] = []
     private var scheduled = false
-    /// Zuletzt bestätigte Werte für die sofortige OSD-Anzeige; älter als `knownFor` gilt als unbekannt (Wert kann im Monitor-OSD geändert worden sein).
-    private var known: [Kind: (current: Int, max: Int, at: Date)] = [:]
+    /// Zuletzt bekannte Werte (Helligkeit, Lautstärke) für die sofortige Anzeige; älter als `knownFor` gilt als unbekannt
+    /// (der Wert kann am Monitor selbst geändert worden sein).
+    private var known: [Control: (current: Int, max: Int, at: Date)] = [:]
     private static let knownFor: TimeInterval = 10
-    private var _volumeBeforeMute: Int?
-    /// Lautstärke vor „Stumm“; gemeinsam für Menü und Tasten (thread-sicher).
-    var volumeBeforeMute: Int? {
-        get { lock.lock(); defer { lock.unlock() }; return _volumeBeforeMute }
-        set { lock.lock(); _volumeBeforeMute = newValue; lock.unlock() }
+    private var volumeBeforeMute: Int?
+
+    /// Stumm umschalten: liefert die Ziel-Lautstärke und merkt den Vorwert (atomar; Menü und Tasten teilen ihn).
+    func toggleMute(current: Int) -> Int {
+        lock.lock(); defer { lock.unlock() }
+        return toggleMuteLocked(current)
+    }
+
+    private func toggleMuteLocked(_ current: Int) -> Int {
+        if current > 0 { volumeBeforeMute = current; return 0 }
+        defer { volumeBeforeMute = nil }
+        return volumeBeforeMute ?? Self.unmuteDefault
     }
 
     func add(_ kind: Kind, delta: Int) {
+        let c: Control = kind == .brightness ? .brightness : .volume
         lock.lock()
-        pending[kind, default: 0] += kind == .mute ? 1 : delta
+        // Erwarteten Wert sofort zeigen, wenn ein frischer Ist-Wert bekannt ist; Stumm wird dann gleich als Zielwert eingereiht.
+        if let k = known[c], Date().timeIntervalSince(k.at) < Self.knownFor {
+            let new = kind == .mute ? toggleMuteLocked(k.current) : min(max(k.current + delta, 0), k.max)
+            known[c] = (new, k.max, k.at)
+            show(c, new, k.max)
+            enqueue(kind == .mute ? .setVolume(new) : .step(c, delta))
+        } else {
+            enqueue(kind == .mute ? .toggleMute : .step(c, delta))
+        }
         let start = !scheduled
         scheduled = true
-        // Erwarteten Wert sofort anzeigen, wenn ein frischer Ist-Wert bekannt ist.
-        let key: Kind = kind == .brightness ? .brightness : .volume
-        var preview: (Int, Int)?
-        if let k = known[key], Date().timeIntervalSince(k.at) < Self.knownFor {
-            let new = kind == .mute ? (k.current > 0 ? 0 : _volumeBeforeMute ?? 5) : min(max(k.current + delta, 0), k.max)
-            known[key] = (new, k.max, k.at)
-            preview = (new, k.max)
-        }
         lock.unlock()
-        if let preview { Self.showOSD(key, preview.0, preview.1) }
         if start { ddcWorker.run { self.drain($0) } }
     }
 
-    private static func showOSD(_ kind: Kind, _ value: Int, _ max: Int) {
-        Task { @MainActor in OSD.show(kind == .brightness ? .brightness : .volume, value: value, max: max) }
+    /// Hängt einen Auftrag an; ein Schritt direkt nach einem Schritt desselben Werts wird zusammengefasst. Nur unter `lock`.
+    private func enqueue(_ job: Job) {
+        if case .step(let c, let d) = job, case .step(let lc, let ld)? = queue.last, lc == c { queue[queue.count - 1] = .step(c, ld + d) }
+        else { queue.append(job) }
     }
 
-    /// Merkt den bestätigten Wert und zeigt ihn, sofern inzwischen kein weiterer Tastendruck wartet (sonst springt das OSD zurück).
-    private func confirm(_ kind: Kind, _ value: Int, _ max: Int) {
-        lock.lock()
-        let newer = pending[kind] != nil || (kind == .volume && pending[.mute] != nil)
-        if !newer { known[kind] = (value, max, Date()) }
-        lock.unlock()
-        if !newer { Self.showOSD(kind, value, max) }
-    }
-
-    private func drain(_ m: Monitor?) {
-        lock.lock(); let jobs = pending; pending = [:]; scheduled = false; lock.unlock()
-        guard let m else { return }
-        // Regel aus CLAUDE.md: erst Ist-Wert lesen, dann mit Rücklesen schreiben.
-        for (kind, delta) in jobs where delta != 0 {
-            switch kind {
-            case .brightness: adjust(m, .brightness, delta)
-            case .volume: adjust(m, .volume, delta)
-            case .mute:
-                guard let r = m.read(.volume) else { continue }
-                let target = r.current > 0 ? 0 : volumeBeforeMute ?? 5
-                if r.current > 0 { volumeBeforeMute = r.current } else { volumeBeforeMute = nil }
-                confirm(.volume, Self.shown(m.write(.volume, target), target, r.current), r.max)
+    /// OSD und Menü auf dem Main-Thread aktualisieren. Unter `lock` eingereiht, damit die Reihenfolge der Anzeigen
+    /// der Reihenfolge der Entscheidungen entspricht (die Main-Queue arbeitet FIFO).
+    private func show(_ c: Control, _ value: Int, _ max: Int) {
+        DispatchQueue.main.async {
+            MainActor.assumeIsolated {
+                OSD.show(c == .brightness ? .brightness : .volume, value: value, max: max)
+                Model.shared.external(c, value, max)
             }
         }
     }
 
-    private func adjust(_ m: Monitor, _ c: Control, _ delta: Int) {
-        guard let r = m.read(c) else { return }
-        let new = min(max(r.current + delta, 0), r.max)
-        let shown = new == r.current ? new : Self.shown(m.write(c, new), new, r.current)
-        confirm(c == .brightness ? .brightness : .volume, shown, r.max)
+    /// Vom Menü gelesener oder geschriebener Wert: Ausgangspunkt für die sofortige Anzeige, solange kein Tastendruck wartet.
+    func remember(_ c: Control, _ value: Int, _ max: Int) {
+        lock.lock()
+        if !waiting(c) { known[c] = (value, max, Date()) }
+        lock.unlock()
     }
 
-    /// Wert, den der Monitor nach dem Schreiben hat: bei Ablehnung der zurückgelesene, sonst der geschriebene.
-    private static func shown(_ result: WriteResult, _ new: Int, _ old: Int) -> Int {
-        if case .rejected(let actual) = result { return actual ?? old }
-        return new
+    /// `true`, wenn ein eingereihter Auftrag diesen Wert betrifft. Nur unter `lock`.
+    private func waiting(_ c: Control) -> Bool {
+        queue.contains { job in
+            switch job {
+            case .step(let jc, _): return jc == c
+            case .setVolume, .toggleMute: return c == .volume
+            }
+        }
+    }
+
+    /// Merkt den bestätigten Wert und zeigt ihn, sofern danach kein weiterer Auftrag für diesen Wert folgt (sonst springt die Anzeige zurück).
+    private func confirm(_ c: Control, _ value: Int, _ max: Int, last: Bool) {
+        lock.lock()
+        if last, !waiting(c) {
+            known[c] = (value, max, Date())
+            show(c, value, max)
+        }
+        lock.unlock()
+    }
+
+    /// Fehlschlag: Vorschau verwerfen, Wert neu lesen lassen und einen Hinweis zeigen.
+    private func fail(_ c: Control, _ message: String) {
+        lock.lock(); known[c] = nil; lock.unlock()
+        DispatchQueue.main.async {
+            MainActor.assumeIsolated {
+                Model.shared.status = message
+                Model.shared.reread(c)
+            }
+        }
+    }
+
+    private func drain(_ m: Monitor?) {
+        lock.lock(); let jobs = queue; queue = []; scheduled = false; lock.unlock()
+        for (i, job) in jobs.enumerated() {
+            let c: Control
+            if case .step(let jc, _) = job { c = jc } else { c = .volume }
+            let last = !jobs[(i + 1)...].contains { other in
+                if case .step(let oc, _) = other { return oc == c }
+                return c == .volume
+            }
+            // Regel aus AGENTS.md: erst Ist-Wert lesen, dann mit Rücklesen schreiben, bei Ablehnung auf den Ist-Wert zurück.
+            guard let m, let r = m.read(c) else {
+                fail(c, tr("\(c.name): Monitor antwortet nicht", "\(c.name): monitor does not respond")); continue
+            }
+            let target: Int
+            switch job {
+            case .step(_, let d): target = min(max(r.current + d, 0), r.max)
+            case .setVolume(let v): target = min(max(v, 0), r.max)
+            case .toggleMute: target = toggleMute(current: r.current)
+            }
+            guard target != r.current else { confirm(c, target, r.max, last: last); continue }
+            let result = m.write(c, target)
+            if case .rejected(let actual) = result {
+                if actual != r.current { m.write(c, r.current) }
+                fail(c, tr("\(c.name): vom Monitor nicht angenommen", "\(c.name): rejected by the monitor"))
+            } else {
+                confirm(c, target, r.max, last: last)
+            }
+        }
     }
 }

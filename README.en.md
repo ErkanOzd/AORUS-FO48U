@@ -2,13 +2,13 @@
 
 A macOS menu bar app (Apple Silicon) that controls the **Gigabyte AORUS FO48U** over DDC/CI. It is an alternative to the Windows-only "OSD Sidekick". German version: [`README.md`](README.md).
 
-> **Beta (0.2.x):** feature set largely complete, but tested with one monitor and one Mac only.
+> **Beta (0.3):** feature set largely complete, but tested with one monitor and one Mac only.
 >
 > Unofficial project, not affiliated with GIGABYTE. "GIGABYTE" and "AORUS" are trademarks of their owners. Use at your own risk (see Notes).
 
 ## Features
 
-Brightness, contrast, volume, sharpness, Black eQualizer, picture mode, input, OverDrive, gamma, color temperature, crosshair, FreeSync, Aim Stabilizer, refresh rate OSD, system stats on the monitor's dashboard, brightness keys (when the mouse pointer is on the monitor) and volume/mute keys (needs the Accessibility permission), launch at login. Every write is read back and retried up to three times; if the monitor reports a different value, the UI shows the reported value and says so. After an input switch the app looks for the DDC service again on the same port. Sliders write only when released; DDC access never runs on the main thread. With several external monitors the app picks the one that answers brightness, input and picture mode (heuristic).
+Brightness, contrast, volume, sharpness, Black eQualizer, picture mode, input, OverDrive, gamma, color temperature, crosshair, FreeSync, Aim Stabilizer, refresh rate OSD, system stats on the monitor's dashboard, brightness keys (when the mouse pointer is on the monitor) and volume/mute keys when sound plays through the monitor, each with its own on-screen display (needs the Accessibility permission), launch at login. Menu and settings (⌘,) with the tabs Picture, Gaming, Mac and General; any setting can be pinned to the menu. Every write is read back and retried up to three times; if the monitor reports a different value, the UI shows the reported value and says so. After an input switch the app looks for the DDC service again on the same port. Values update by themselves: menu and settings read immediately when opened and then continuously, but only while visible; key presses show up in the menu right away. If the monitor is disconnected, the menu says so and the app searches all ports again. Sliders write only when released; DDC access never runs on the main thread. With several external monitors the app picks the one that answers brightness, input and picture mode (heuristic).
 
 The UI is German on a German system and English otherwise.
 
@@ -26,11 +26,14 @@ The UI is German on a German system and English otherwise.
 
 ```sh
 git clone https://github.com/ErkanOzd/AORUS-FO48U.git && cd AORUS-FO48U
-scripts/build-app.sh                       # builds dist/MonitorDeck.app (ad-hoc signed)
-cp -R "dist/MonitorDeck.app" ~/Applications/
-open ~/Applications/"MonitorDeck.app"
-scripts/make-dmg.sh                        # optional: builds dist/MonitorDeck-<version>.dmg
+scripts/install.sh                         # builds, replaces /Applications/MonitorDeck.app and launches it
+scripts/build-app.sh                       # build only: dist/MonitorDeck.app
+scripts/make-dmg.sh                        # optional: builds dist/MonitorDeck-<version>.dmg (always ad-hoc signed)
 ```
+
+If you copied an older version to `~/Applications`, delete that copy (otherwise there are two apps with the same bundle ID, and launch at login or `open` may start the old one).
+
+Signing: if your keychain holds an "Apple Development" certificate, `build-app.sh` signs with it and the Accessibility permission survives rebuilds. Without one (or with `SIGN_IDENTITY=-`) the app is signed ad hoc and the permission must be granted again after every rebuild. If the signature changes, `install.sh` opens the Accessibility settings: switch MonitorDeck off and on there.
 
 On first launch the app asks once whether it should start at login. You can change this with the "Launch at login" switch in the settings (⌘,), tab "General", or with `MonitorDeck.app/Contents/MacOS/MonitorDeck --autostart on|off` (must run from the app bundle). After a rebuild or after moving the app the login item may need to be set again (unverified).
 

@@ -237,6 +237,16 @@ struct SettingsView: View {
         var icon: String { switch self { case .image: "display"; case .gaming: "scope"; case .mac: "laptopcomputer"; case .general: "slider.horizontal.3" } }
     }
     @State private var tab: Tab = .image
+    /// Werte, die der aktive Tab zeigt; nur diese liest die App, solange das Fenster sichtbar ist.
+    private static var shownControls = controls(.image)
+    private static func controls(_ t: Tab) -> [Control] {
+        switch t {
+        case .image: PinItem.image.map(\.control)
+        case .gaming: PinItem.gaming.map(\.control)
+        case .mac: []
+        case .general: [.input]   // Zeile „Verbindung“
+        }
+    }
 
     private var tabBar: some View {
         HStack(spacing: 4) {
@@ -274,7 +284,11 @@ struct SettingsView: View {
         .frame(width: 560, height: 500)
         .background(Color(nsColor: .windowBackgroundColor))
         .ignoresSafeArea()
-        .background(WindowVisibility { visible in model.watch("settings", visible: visible) { PinItem.all.map(\.control) } })
+        .background(WindowVisibility { visible in model.watch("settings", visible: visible) { SettingsView.shownControls } })
+        .onChange(of: tab) { _, t in
+            Self.shownControls = Self.controls(t)
+            Task { await model.refresh(Self.shownControls, clearStatus: false) }
+        }
     }
 
     private var macTab: some View {

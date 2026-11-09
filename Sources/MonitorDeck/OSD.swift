@@ -20,6 +20,8 @@ enum OSD {
     private static let state = State()
     private static var panel: NSPanel?
     private static var hideTask: Task<Void, Never>?
+    /// Zählt Anzeigen; eine Ausblend-Animation blendet nur aus, wenn seitdem nichts Neues gezeigt wurde.
+    private static var generation = 0
     private static let size = CGSize(width: 300, height: 64)
     private static let topGap: CGFloat = 9, rightGap: CGFloat = 52
     private static let visibleFor: Duration = .milliseconds(1500)
@@ -35,17 +37,17 @@ enum OSD {
             let f = screen.frame, top = screen.visibleFrame.maxY
             p.setFrameOrigin(CGPoint(x: f.maxX - size.width - rightGap, y: top - size.height - topGap))
         }
-        if !p.isVisible || p.alphaValue < 1 {
-            p.alphaValue = 0
-            p.orderFrontRegardless()
-            NSAnimationContext.runAnimationGroup { $0.duration = 0.15; p.animator().alphaValue = 1 }
-        }
+        if !p.isVisible { p.alphaValue = 0; p.orderFrontRegardless() }
+        // Auch eine laufende Ausblendung wird vom aktuellen Wert aus wieder eingeblendet (kein Flackern über 0).
+        NSAnimationContext.runAnimationGroup { $0.duration = 0.15; p.animator().alphaValue = 1 }
+        generation += 1
+        let shown = generation
         hideTask?.cancel()
         hideTask = Task {
             try? await Task.sleep(for: visibleFor)
-            guard !Task.isCancelled else { return }
+            guard !Task.isCancelled, shown == generation else { return }
             NSAnimationContext.runAnimationGroup({ $0.duration = 0.3; p.animator().alphaValue = 0 }, completionHandler: {
-                MainActor.assumeIsolated { if p.alphaValue == 0 { p.orderOut(nil) } }
+                MainActor.assumeIsolated { if shown == generation { p.orderOut(nil) } }
             })
         }
     }
@@ -62,6 +64,7 @@ enum OSD {
         p.hasShadow = false
         p.ignoresMouseEvents = true
         p.isReleasedWhenClosed = false
+        p.hidesOnDeactivate = false   // sonst verschwindet das OSD, wenn die App (Einstellungen offen) den Fokus verliert
         p.collectionBehavior = [.canJoinAllSpaces, .fullScreenAuxiliary, .stationary, .ignoresCycle]
         p.contentView = NSHostingView(rootView: Capsule_(state: state).frame(width: size.width, height: size.height))
         return p

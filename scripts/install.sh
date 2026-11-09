@@ -16,10 +16,16 @@ old=""
 [ -d "$target" ] && old=$(requirement "$target")
 new=$(requirement dist/MonitorDeck.app)
 
-# Laufende Instanz beenden (startet die App nicht, falls sie nicht läuft).
-osascript -e "if application id \"$bundle_id\" is running then tell application id \"$bundle_id\" to quit" >/dev/null
-i=0
-while pgrep -f "$target/Contents/MacOS/MonitorDeck" >/dev/null && [ $i -lt 50 ]; do sleep 0.1; i=$((i + 1)); done
+# Laufende Instanz beenden (nur wenn eine läuft: Auf einem Mac ohne Installation kennt AppleScript die Bundle-ID nicht).
+if pgrep -x MonitorDeck >/dev/null; then
+    osascript -e "tell application id \"$bundle_id\" to quit" >/dev/null 2>&1 || true
+    i=0
+    while pgrep -x MonitorDeck >/dev/null && [ $i -lt 50 ]; do sleep 0.1; i=$((i + 1)); done
+    if pgrep -x MonitorDeck >/dev/null; then
+        echo "MonitorDeck läuft noch (offener Dialog?). Bitte beenden und erneut aufrufen." >&2
+        exit 1
+    fi
+fi
 
 rm -rf "$target"
 ditto dist/MonitorDeck.app "$target"
