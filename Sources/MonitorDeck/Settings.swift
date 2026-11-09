@@ -254,6 +254,7 @@ struct SettingsView: View {
                 .buttonStyle(.plain)
             }
         }
+        .focusEffectDisabled()   // sonst zeigt der erste Tab beim Öffnen einen blauen Fokusrahmen
         .padding(.top, 30).padding(.bottom, 8)
         .frame(maxWidth: .infinity)
         .background(.bar)
