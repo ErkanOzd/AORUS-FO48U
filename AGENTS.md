@@ -13,7 +13,7 @@
 - Archivinhalt prüfen: `unzip -l GCC_26.09.10.01.zip`
 - App bauen: `swift build`; App-Bundle: `scripts/build-app.sh` (nach `dist/`); Installer-Image: `scripts/make-dmg.sh`; Selbsttest am Monitor: `.build/debug/MonitorDeck --selftest`; Schreibtest (Helligkeit ±10 mit Rücklesen, stellt zurück): `--writetest`; Quellenwechsel-Test (Bild fällt kurz aus): `--inputtest`; App: `.build/debug/MonitorDeck`
 - Probe bauen/starten (nur lesend): `swiftc -O _analyse/poc/ddcprobe.swift -o _analyse/poc/ddcprobe -framework IOKit && _analyse/poc/ddcprobe`
-- Monitor schnell prüfen: `m1ddc display 2 get luminance`
+- Monitor schnell prüfen: `m1ddc display list`, dann `m1ddc display <Nr> get luminance`
 - Analyse-Werkzeuge (Homebrew): `sevenzip` (`7zz`), `dotnet` + `ilspycmd` (`~/.dotnet/tools`, `DOTNET_ROOT=/opt/homebrew/opt/dotnet/libexec`), `radare2`, `m1ddc`
 
 ## Struktur
@@ -24,6 +24,7 @@
 - `_analyse/poc/` — Swift-Proof-of-Concept; `_analyse/meta/` — Geräte-/Konfigurationsdateien aus dem Installer; `_analyse/sidekick/`, `_analyse/decomp/` — entpackte Binaries und Dekompilate (nicht im Repo)
 - `README.md` — Kurzüberblick; `docs/FUNKTIONEN.md` — Funktionsumfang und Prüfstand (ein Monitor)
 - `STATUS.md` — aktueller Stand und nächste Schritte
+- `.claude/rules/ux.md` — UX-Leitlinien der App (Live-Werte, Vorrang der Eingabe, Rückmeldung)
 
 ## Definition of Done
 - Laufzeit-Smoketest nach Änderungen am DDC-Code: `swift build && .build/debug/MonitorDeck --selftest` (Monitor am USB-C, Werte plausibel).
@@ -42,6 +43,7 @@
 - `STATUS.md` — aktueller Stand, Entscheidungen, nächste Schritte (wird bei `/close` aktualisiert).
 
 ## Gotchas
-- Unter macOS steuert `IOAVService` nur den Monitor, der per DP-Alt-Mode hängt; `m1ddc display list` zeigt zwei Displays, der FO48U ist Display 2 [gemessen 2026-10-30].
+- Unter macOS steuert `IOAVService` nur den Monitor, der per DP-Alt-Mode hängt; die Nummer bei `m1ddc` hängt von den aktiven Displays ab (mit internem Display: Display 2 [gemessen 2026-10-30]; FO48U allein: Display 1 [gemessen 2026-11-09]), vorher `m1ddc display list`.
+- `m1ddc` liefert falsche Werte (z. B. `0`, `5332`), wenn MonitorDeck gleichzeitig liest; für Gegenproben Menü und Einstellungen schließen [gemessen 2026-11-09].
 - Eigene Entpack-Verzeichnisse unter `_analyse/` anlegen, nie im Projektroot entpacken.
 - Das Repo wird öffentlich gedacht: keine Gigabyte-Dateien (ZIP, `_analyse/sidekick|decomp|meta`), keine Seriennummern oder Pfade ins Repo (`.gitignore`).

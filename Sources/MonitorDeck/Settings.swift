@@ -84,7 +84,7 @@ extension Model {
         return Slider(value: Binding(get: { Double(b.wrappedValue) }, set: { b.wrappedValue = Int($0.rounded()) }), in: 0...Double(maxes[c] ?? max)) {
             Text(c.name)
         } onEditingChanged: { editing in
-            if !editing { self.set(c, b.wrappedValue) }
+            if editing { self.dragging.insert(c) } else { self.dragging.remove(c); self.set(c, b.wrappedValue) }
         }
         .labelsHidden()
         .disabled(values[c] == nil)
@@ -273,6 +273,7 @@ struct SettingsView: View {
         .frame(width: 560, height: 500)
         .background(Color(nsColor: .windowBackgroundColor))
         .ignoresSafeArea()
+        .background(WindowVisibility { visible in model.watch("settings", visible: visible) { PinItem.all.map(\.control) } })
     }
 
     private var macTab: some View {
@@ -312,7 +313,6 @@ struct SettingsView: View {
                     Row(title: tr("Beim Anmelden starten", "Launch at login")) {
                         Toggle("", isOn: Binding(get: { autostart.enabled }, set: { autostart.set($0) })).toggleStyle(.switch).labelsHidden()
                     }
-                    Row(title: tr("Monitorwerte", "Monitor values")) { Button(tr("Neu lesen", "Reload")) { model.refresh() } }
                 }
                 if let note = autostart.note { Footer(text: note) }
             }

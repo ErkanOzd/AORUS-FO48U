@@ -87,18 +87,51 @@ final class Model: ObservableObject {
 
     nonisolated static let shown: [Control] = [.brightness, .contrast, .volume, .sharpness, .pictureMode, .input, .overDrive, .gamma, .blackEQ, .colorTemp, .freeSync, .aimStabilizer, .crosshair, .refreshOSD]
 
-    init() { refresh() }
+    /// Zählt Schreibvorgänge je Wert: ein Lesewert, der vor dem Schreiben angefragt wurde, überschreibt die Anzeige nicht.
+    private var epoch: [Control: Int] = [:]
+    /// Gerade gezogene Schieberegler: Neulesen lässt sie in Ruhe.
+    var dragging: Set<Control> = []
 
-    func refresh() {
-        worker.run { m in
-            var read: [Control: Int] = [:], max: [Control: Int] = [:]
-            if let m { for c in Self.shown { if let r = m.read(c) { read[c] = r.current; max[c] = r.max } } }
-            let found = m != nil
-            Task { @MainActor in
-                self.connected = found
-                self.values.merge(read) { _, new in new }
-                self.maxes.merge(max) { _, new in new }
-                if found { self.status = nil }
+    init() { Task { await refresh() } }
+
+    /// Liest `controls` nacheinander, je Wert ein eigener Auftrag auf der DDC-Queue (ein Schreibwunsch wartet höchstens einen Lesevorgang).
+    func refresh(_ controls: [Control] = Model.shown, clearStatus: Bool = true) async {
+        let snapshot = epoch
+        let found = await withCheckedContinuation { cont in worker.run { cont.resume(returning: $0 != nil) } }
+        connected = found
+        guard found else { return }
+        if clearStatus { status = nil }
+        for c in controls {
+            let r = await withCheckedContinuation { cont in worker.run { cont.resume(returning: $0?.read(c)) } }
+            guard let r, epoch[c] == snapshot[c], !dragging.contains(c) else { continue }
+            if values[c] != r.current { values[c] = r.current }
+            if maxes[c] != r.max { maxes[c] = r.max }
+        }
+    }
+
+    // MARK: Live-Aktualisierung
+
+    /// Pause zwischen zwei Lesedurchläufen, solange etwas Werte anzeigt.
+    private static let pollPause: Duration = .seconds(1)
+    /// Sichtbare Oberflächen (Menü, Einstellungen) und die Werte, die sie zeigen.
+    private var watchers: [String: @MainActor () -> [Control]] = [:]
+    private var poll: Task<Void, Never>?
+
+    /// Meldet eine Oberfläche als sichtbar oder verdeckt; `controls` liefert die Werte, die sie zeigt. Beim Sichtbarwerden wird sofort gelesen,
+    /// danach laufend; ohne sichtbare Oberfläche liest die App nicht.
+    func watch(_ id: String, visible: Bool, _ controls: @escaping @MainActor () -> [Control]) {
+        let added = visible && watchers[id] == nil
+        watchers[id] = visible ? controls : nil
+        if watchers.isEmpty || added { poll?.cancel(); poll = nil }
+        guard !watchers.isEmpty, poll == nil else { return }
+        poll = Task {
+            var first = true
+            while !Task.isCancelled {
+                var seen = Set<Control>()
+                let list = watchers.values.flatMap { $0() }.filter { seen.insert($0).inserted }
+                await refresh(list, clearStatus: first)
+                first = false
+                try? await Task.sleep(for: Self.pollPause)
             }
         }
     }
@@ -107,6 +140,7 @@ final class Model: ObservableObject {
     func set(_ c: Control, _ v: Int) {
         let old = values[c]
         values[c] = v
+        epoch[c, default: 0] += 1
         worker.run { m in
             // Regel aus CLAUDE.md: erst Ist-Wert lesen, bei Ablehnung darauf zurückspringen.
             let before = m?.read(c)?.current
@@ -202,7 +236,6 @@ struct MenuView: View {
                 Text(tr("Suche Monitor …", "Looking for monitor …")).padding(.vertical, 8)
             } else if model.connected == false {
                 Text(tr("Kein passender Monitor gefunden", "No matching monitor found")).padding(.vertical, 8)
-                Button(tr("Erneut suchen", "Search again")) { model.refresh() }.padding(.bottom, 8)
             } else {
                 HStack {
                     VStack(alignment: .leading, spacing: 1) {
@@ -232,7 +265,42 @@ struct MenuView: View {
         .padding(.horizontal, 16).padding(.top, 14).padding(.bottom, 8)
         .frame(width: 300)
         .focusEffectDisabled()
-        .onAppear { model.refresh() }
+        .background(WindowVisibility { visible in
+            model.watch("menu", visible: visible) { [.volume, .brightness, .contrast, .sharpness, .input] + PinItem.all.map(\.control).filter { Pins.shared.isPinned($0) } }
+        })
+    }
+}
+
+/// Meldet, ob das Fenster dieser View auf dem Bildschirm sichtbar ist (Menü offen, Einstellungen nicht verdeckt oder minimiert).
+struct WindowVisibility: NSViewRepresentable {
+    let onChange: @MainActor (Bool) -> Void
+    func makeNSView(context: Context) -> Probe { Probe(onChange) }
+    func updateNSView(_ view: Probe, context: Context) {}
+
+    final class Probe: NSView {
+        private let onChange: @MainActor (Bool) -> Void
+        private var token: NSObjectProtocol?
+        private var last: Bool?
+        init(_ onChange: @escaping @MainActor (Bool) -> Void) { self.onChange = onChange; super.init(frame: .zero) }
+        required init?(coder: NSCoder) { nil }
+
+        override func viewDidMoveToWindow() {
+            super.viewDidMoveToWindow()
+            if let token { NotificationCenter.default.removeObserver(token) }
+            token = window.map { w in
+                NotificationCenter.default.addObserver(forName: NSWindow.didChangeOcclusionStateNotification, object: w, queue: .main) { [weak self] _ in
+                    MainActor.assumeIsolated { self?.update() }
+                }
+            }
+            update()
+        }
+
+        private func update() {
+            let visible = window?.occlusionState.contains(.visible) ?? false
+            guard visible != last else { return }
+            last = visible
+            onChange(visible)
+        }
     }
 }
 
