@@ -25,6 +25,7 @@
 - 0.2.4: Fadenkreuz nur Ein/Aus (Motive 1–4 identisch laut Nutzer, schreibt 1); Lautstärke und Stumm unabhängig von der Mausposition, Helligkeit nur bei Zeiger auf dem Monitor; keine Standard-Pins.
 - Live-Werte (2026-11-09, noch ohne Versionsnummer): Menü und Einstellungen lesen beim Öffnen sofort und danach laufend (1 s Pause), geschlossen gar nicht; Ziehen eines Reglers wird nicht überschrieben. Knöpfe „Neu lesen“ und „Erneut suchen“ entfallen. Belegt am Monitor (Helligkeit extern geändert, Menü zog nach; `sample` zeigt keine DDC-Zugriffe bei geschlossenem Menü). UX-Leitlinien: `.claude/rules/ux.md`.
 - Lautstärke-/Stummtasten nur bei Tonausgabe über den Monitor, sonst regelt macOS; eigenes OSD für Helligkeit und Lautstärke (System-OSD für DDC-Monitore nicht nutzbar). Belegt mit simulierten Tasten und Bildschirmaufnahmen (2026-11-09), Details `docs/FUNKTIONEN.md`, Abschnitt „Tonausgabe und OSD“.
+- `scripts/install.sh` (bauen, `/Applications` ersetzen, starten); OSD pixelgenau ans System-OSD angeglichen (Werte im Kopfkommentar von `OSD.swift`); blauer Fokusrahmen auf dem ersten Einstellungs-Tab entfernt (2026-11-09, per Bildschirmaufnahme geprüft).
 - Unverifiziert: Tastenwirkung der Versionen 0.2.2–0.2.4 am Bildschirm, Stumm-Wiederherstellung, Autostart nach Neuanmeldung (Klick auf „Beim Anmelden starten“), Klickbedienung der Tabs Gaming/Mac/Allgemein.
 
 ## Nächste Schritte (priorisiert)
