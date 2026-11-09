@@ -2,7 +2,7 @@ import AppKit
 import ApplicationServices
 import FO48UKit
 
-/// Leitet Helligkeits- (Mauszeiger auf dem Monitor) und Lautstärketasten (solange der Monitor angeschlossen ist) an den Monitor um.
+/// Leitet Helligkeits- (Mauszeiger auf dem Monitor) und Lautstärketasten (Tonausgabe ist der Monitor) an den Monitor um und zeigt ein OSD.
 /// Braucht die Berechtigung „Bedienungshilfen“ (aktiver `CGEventTap`, nur so lassen sich Tasten abfangen).
 @MainActor
 final class MediaKeys: ObservableObject {
@@ -102,9 +102,9 @@ final class MediaKeys: ObservableObject {
         let data = event.data1
         let flags = data & 0xFFFF
         guard let code = Code(rawValue: (data & 0xFFFF0000) >> 16) else { return false }
-        // Lautstärke und Stumm unabhängig vom Mauszeiger (der Ton hängt am Monitor, solange er angeschlossen ist); Helligkeit nur bei Zeiger auf dem Monitor.
+        // Lautstärke und Stumm nur, wenn der Ton über den Monitor läuft (sonst regelt macOS selbst); Helligkeit nur bei Zeiger auf dem Monitor.
         switch code {
-        case .mute, .soundUp, .soundDown: guard monitorConnected() else { return false }
+        case .mute, .soundUp, .soundDown: guard AudioOutput.isMonitor() else { return false }
         case .brightnessUp, .brightnessDown: guard onMonitor() else { return false }
         }
         // Nur Tastendruck (0xA) auslösen, Loslassen aber ebenfalls verschlucken.
@@ -142,12 +142,6 @@ final class MediaKeys: ObservableObject {
         return CACurrentMediaTime() - l.1 < 0.06
     }
 
-    private func monitorConnected() -> Bool {
-        NSScreen.screens.contains { s in
-            (s.deviceDescription[NSDeviceDescriptionKey("NSScreenNumber")] as? CGDirectDisplayID).map { CGDisplayVendorNumber($0) == Self.vendor } ?? false
-        }
-    }
-
     private func onMonitor() -> Bool {
         let p = NSEvent.mouseLocation
         guard let screen = NSScreen.screens.first(where: { NSMouseInRect(p, $0.frame, false) }),
@@ -157,12 +151,16 @@ final class MediaKeys: ObservableObject {
 }
 
 /// Fasst schnelle Tastendrücke (Wiederholung) zusammen und führt sie auf der DDC-Queue mit Rücklesen aus.
+/// Das OSD zeigt sofort den erwarteten Wert und danach den vom Monitor bestätigten.
 final class KeyJobs: @unchecked Sendable {
     static let shared = KeyJobs()
     enum Kind { case brightness, volume, mute }
     private let lock = NSLock()
     private var pending: [Kind: Int] = [:]
     private var scheduled = false
+    /// Zuletzt bestätigte Werte für die sofortige OSD-Anzeige; älter als `knownFor` gilt als unbekannt (Wert kann im Monitor-OSD geändert worden sein).
+    private var known: [Kind: (current: Int, max: Int, at: Date)] = [:]
+    private static let knownFor: TimeInterval = 10
     private var _volumeBeforeMute: Int?
     /// Lautstärke vor „Stumm“; gemeinsam für Menü und Tasten (thread-sicher).
     var volumeBeforeMute: Int? {
@@ -175,8 +173,30 @@ final class KeyJobs: @unchecked Sendable {
         pending[kind, default: 0] += kind == .mute ? 1 : delta
         let start = !scheduled
         scheduled = true
+        // Erwarteten Wert sofort anzeigen, wenn ein frischer Ist-Wert bekannt ist.
+        let key: Kind = kind == .brightness ? .brightness : .volume
+        var preview: (Int, Int)?
+        if let k = known[key], Date().timeIntervalSince(k.at) < Self.knownFor {
+            let new = kind == .mute ? (k.current > 0 ? 0 : _volumeBeforeMute ?? 5) : min(max(k.current + delta, 0), k.max)
+            known[key] = (new, k.max, k.at)
+            preview = (new, k.max)
+        }
         lock.unlock()
+        if let preview { Self.showOSD(key, preview.0, preview.1) }
         if start { ddcWorker.run { self.drain($0) } }
+    }
+
+    private static func showOSD(_ kind: Kind, _ value: Int, _ max: Int) {
+        Task { @MainActor in OSD.show(kind == .brightness ? .brightness : .volume, value: value, max: max) }
+    }
+
+    /// Merkt den bestätigten Wert und zeigt ihn, sofern inzwischen kein weiterer Tastendruck wartet (sonst springt das OSD zurück).
+    private func confirm(_ kind: Kind, _ value: Int, _ max: Int) {
+        lock.lock()
+        let newer = pending[kind] != nil || (kind == .volume && pending[.mute] != nil)
+        if !newer { known[kind] = (value, max, Date()) }
+        lock.unlock()
+        if !newer { Self.showOSD(kind, value, max) }
     }
 
     private func drain(_ m: Monitor?) {
@@ -188,8 +208,10 @@ final class KeyJobs: @unchecked Sendable {
             case .brightness: adjust(m, .brightness, delta)
             case .volume: adjust(m, .volume, delta)
             case .mute:
-                guard let cur = m.read(.volume)?.current else { continue }
-                if cur > 0 { volumeBeforeMute = cur; m.write(.volume, 0) } else { m.write(.volume, volumeBeforeMute ?? 5); volumeBeforeMute = nil }
+                guard let r = m.read(.volume) else { continue }
+                let target = r.current > 0 ? 0 : volumeBeforeMute ?? 5
+                if r.current > 0 { volumeBeforeMute = r.current } else { volumeBeforeMute = nil }
+                confirm(.volume, Self.shown(m.write(.volume, target), target, r.current), r.max)
             }
         }
     }
@@ -197,6 +219,13 @@ final class KeyJobs: @unchecked Sendable {
     private func adjust(_ m: Monitor, _ c: Control, _ delta: Int) {
         guard let r = m.read(c) else { return }
         let new = min(max(r.current + delta, 0), r.max)
-        if new != r.current { m.write(c, new) }
+        let shown = new == r.current ? new : Self.shown(m.write(c, new), new, r.current)
+        confirm(c == .brightness ? .brightness : .volume, shown, r.max)
+    }
+
+    /// Wert, den der Monitor nach dem Schreiben hat: bei Ablehnung der zurückgelesene, sonst der geschriebene.
+    private static func shown(_ result: WriteResult, _ new: Int, _ old: Int) -> Int {
+        if case .rejected(let actual) = result { return actual ?? old }
+        return new
     }
 }

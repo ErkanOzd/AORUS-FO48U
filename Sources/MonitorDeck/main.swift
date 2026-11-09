@@ -83,6 +83,8 @@ final class Model: ObservableObject {
     @Published var maxes: [Control: Int] = [:]
     @Published var connected: Bool?   // nil = Suche läuft
     @Published var status: String?
+    /// Name der Tonausgabe, wenn der Ton nicht über den Monitor läuft (dann regeln die Lautstärketasten den Mac).
+    @Published var audioElsewhere: String?
     static let shared = Model()
 
     nonisolated static let shown: [Control] = [.brightness, .contrast, .volume, .sharpness, .pictureMode, .input, .overDrive, .gamma, .blackEQ, .colorTemp, .freeSync, .aimStabilizer, .crosshair, .refreshOSD]
@@ -97,6 +99,8 @@ final class Model: ObservableObject {
     /// Liest `controls` nacheinander, je Wert ein eigener Auftrag auf der DDC-Queue (ein Schreibwunsch wartet höchstens einen Lesevorgang).
     func refresh(_ controls: [Control] = Model.shown, clearStatus: Bool = true) async {
         let snapshot = epoch
+        let elsewhere = AudioOutput.isMonitor() ? nil : AudioOutput.name() ?? tr("anderes Gerät", "another device")
+        if audioElsewhere != elsewhere { audioElsewhere = elsewhere }
         let found = await withCheckedContinuation { cont in worker.run { cont.resume(returning: $0 != nil) } }
         connected = found
         guard found else { return }
@@ -247,6 +251,10 @@ struct MenuView: View {
                 }
                 .padding(.bottom, 4)
                 volumeRow
+                if let out = model.audioElsewhere {
+                    Text(tr("Ton läuft über „\(out)“, die Lautstärketasten regeln den Mac.", "Sound plays through “\(out)”; the volume keys control the Mac."))
+                        .font(.caption).foregroundStyle(.secondary).fixedSize(horizontal: false, vertical: true).padding(.bottom, 4)
+                }
                 sliderRow(.brightness, icon: "sun.max")
                 sliderRow(.contrast, icon: "circle.righthalf.filled")
                 sliderRow(.sharpness, icon: "sharpness", max: 10)
@@ -354,7 +362,7 @@ struct DotLabelStyle: LabelStyle {
     NSApp.activate(ignoringOtherApps: true)
     let alert = NSAlert()
     alert.messageText = tr("Helligkeits- und Lautstärketasten für den Monitor nutzen?", "Use brightness and volume keys for the monitor?")
-    alert.informativeText = tr("Die Tasten steuern den Monitor, solange der Mauszeiger darauf steht. Dafür braucht die App die Berechtigung „Bedienungshilfen“; macOS fragt gleich danach. Die Einstellung lässt sich jederzeit im Tab „Mac“ ändern.", "The keys control the monitor while the pointer is on it. This needs the “Accessibility” permission; macOS asks right after. You can change this at any time in the “Mac” tab.")
+    alert.informativeText = tr("Helligkeitstasten steuern den Monitor, solange der Mauszeiger darauf steht, Lautstärketasten, solange der Ton über ihn läuft. Dafür braucht die App die Berechtigung „Bedienungshilfen“; macOS fragt gleich danach. Die Einstellung lässt sich jederzeit im Tab „Mac“ ändern.", "Brightness keys control the monitor while the pointer is on it, volume keys while sound plays through it. This needs the “Accessibility” permission; macOS asks right after. You can change this at any time in the “Mac” tab.")
     alert.addButton(withTitle: tr("Aktivieren", "Enable"))
     alert.addButton(withTitle: tr("Nicht jetzt", "Not now"))
     guard alert.runModal() == .alertFirstButtonReturn else { return }

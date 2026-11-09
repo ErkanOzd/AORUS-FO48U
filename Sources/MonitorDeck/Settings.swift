@@ -293,7 +293,7 @@ struct SettingsView: View {
                     Row(title: tr("Schritt Helligkeit", "Brightness step")) { StepControl(value: $keys.brightnessStep, range: 1...10) }
                     Row(title: tr("Schritt Lautstärke", "Volume step")) { StepControl(value: $keys.volumeStep, range: 1...10) }
                 }
-                Footer(text: tr("Helligkeit wirkt nur, solange der Mauszeiger auf dem Monitor steht, Lautstärke und Stumm immer. Braucht die Berechtigung „Bedienungshilfen“. Schritte: 1–10.", "Brightness only applies while the pointer is on the monitor, volume and mute always. Needs the “Accessibility” permission. Steps: 1–10."), note: keys.note)
+                Footer(text: tr("Helligkeit wirkt nur, solange der Mauszeiger auf dem Monitor steht, Lautstärke und Stumm, solange der Ton über den Monitor läuft (sonst regelt macOS). Braucht die Berechtigung „Bedienungshilfen“. Schritte: 1–10.", "Brightness only applies while the pointer is on the monitor, volume and mute while sound plays through the monitor (otherwise macOS handles them). Needs the “Accessibility” permission. Steps: 1–10."), note: keys.note)
             }
             VStack(spacing: 0) {
                 Card {
