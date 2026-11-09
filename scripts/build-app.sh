@@ -1,6 +1,9 @@
 #!/bin/sh
-# Baut "MonitorDeck.app" (Release, ad-hoc signiert) nach dist/.
-# Aufruf: scripts/build-app.sh
+# Baut "MonitorDeck.app" (Release) nach dist/.
+# Signatur: SIGN_IDENTITY legt sie fest ("-" = ad-hoc); sonst die erste Identität "Apple Development" im Schlüsselbund,
+# ohne sie ad-hoc. Mit Zertifikat bleibt die Signatur-Anforderung über Neubauten gleich, die Freigabe
+# „Bedienungshilfen“ bleibt also erhalten; ad-hoc hängt sie am Hash jedes einzelnen Builds.
+# Aufruf: scripts/build-app.sh   bzw.   SIGN_IDENTITY=- scripts/build-app.sh
 set -eu
 version=0.2.4
 root=$(cd "$(dirname "$0")/.." && pwd)
@@ -31,5 +34,8 @@ cat > "$app/Contents/Info.plist" <<PLIST
 </dict>
 </plist>
 PLIST
-codesign --force --sign - "$app"
+identity=${SIGN_IDENTITY-$(security find-identity -v -p codesigning 2>/dev/null | awk -F'"' '/"Apple Development: /{print $2; exit}')}
+identity=${identity:--}
+codesign --force --sign "$identity" "$app"
+if [ "$identity" = "-" ]; then echo "signiert: ad-hoc"; else echo "signiert: Apple Development"; fi
 echo "fertig: $app"

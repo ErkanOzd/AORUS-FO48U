@@ -24,7 +24,7 @@
 - 0.2.3: Steuerung startet selbst, sobald „Bedienungshilfen“ erteilt ist (1-s-Timer).
 - 0.2.4: Fadenkreuz nur Ein/Aus (Motive 1–4 identisch laut Nutzer, schreibt 1); Lautstärke und Stumm unabhängig von der Mausposition, Helligkeit nur bei Zeiger auf dem Monitor; keine Standard-Pins.
 - Live-Werte (2026-11-09, noch ohne Versionsnummer): Menü und Einstellungen lesen beim Öffnen sofort und danach laufend (1 s Pause), geschlossen gar nicht; Ziehen eines Reglers wird nicht überschrieben. Knöpfe „Neu lesen“ und „Erneut suchen“ entfallen. Belegt am Monitor (Helligkeit extern geändert, Menü zog nach; `sample` zeigt keine DDC-Zugriffe bei geschlossenem Menü). UX-Leitlinien: `.claude/rules/ux.md`.
-- Lautstärke-/Stummtasten nur bei Tonausgabe über den Monitor, sonst regelt macOS; eigenes OSD für Helligkeit und Lautstärke (System-OSD für DDC-Monitore nicht nutzbar). Belegt mit simulierten Tasten und Bildschirmaufnahmen (2026-11-09), Details `docs/FUNKTIONEN.md`, Abschnitt „Tonausgabe und OSD“. Installierte App noch nicht aktualisiert.
+- Lautstärke-/Stummtasten nur bei Tonausgabe über den Monitor, sonst regelt macOS; eigenes OSD für Helligkeit und Lautstärke (System-OSD für DDC-Monitore nicht nutzbar). Belegt mit simulierten Tasten und Bildschirmaufnahmen (2026-11-09), Details `docs/FUNKTIONEN.md`, Abschnitt „Tonausgabe und OSD“.
 - Unverifiziert: Tastenwirkung der Versionen 0.2.2–0.2.4 am Bildschirm, Stumm-Wiederherstellung, Autostart nach Neuanmeldung (Klick auf „Beim Anmelden starten“), Klickbedienung der Tabs Gaming/Mac/Allgemein.
 
 ## Nächste Schritte (priorisiert)
@@ -33,5 +33,5 @@
 3. Prüfen, ob Timer, KVM oder PIP/PBP nur über das USB-HID-Gerät laufen.
 
 ## Entscheidungen / Blocker
-- Notarisierung entfällt wegen privater API (ad-hoc signiert; „Bedienungshilfen“ muss nach jedem Neubau neu erteilt werden).
+- Notarisierung entfällt wegen privater API. Lokale Builds signiert `build-app.sh` mit „Apple Development“, falls vorhanden (Signatur-Anforderung = Bundle-ID + Zertifikat; die Freigabe „Bedienungshilfen“ überstand einen Neubau mit geänderter Binärdatei [gemessen 2026-11-09, aktiver Event-Tap ohne neue Freigabe]); Release-Image bleibt ad-hoc, damit kein persönliches Zertifikat im Download steckt. Das Zurücksetzen von TCC-Freigaben sperrt der globale Hook `ops-guard.sh`; `install.sh` öffnet stattdessen die Seite „Bedienungshilfen“.
 - `IOAVService` ist eine private Apple-API: nicht App-Store-tauglich, kann mit macOS-Updates brechen.

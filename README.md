@@ -28,11 +28,12 @@ Die Oberfläche ist zweisprachig: Deutsch bei deutscher Systemsprache, sonst Eng
 
 ```sh
 git clone https://github.com/ErkanOzd/AORUS-FO48U.git && cd AORUS-FO48U
-scripts/build-app.sh                       # baut dist/MonitorDeck.app (ad-hoc signiert)
-cp -R "dist/MonitorDeck.app" ~/Applications/
-open ~/Applications/"MonitorDeck.app"
-scripts/make-dmg.sh                        # optional: baut dist/MonitorDeck-<Version>.dmg
+scripts/install.sh                         # baut, ersetzt /Applications/MonitorDeck.app und startet sie
+scripts/build-app.sh                       # nur bauen: dist/MonitorDeck.app
+scripts/make-dmg.sh                        # optional: baut dist/MonitorDeck-<Version>.dmg (immer ad-hoc signiert)
 ```
+
+Signatur: Liegt im Schlüsselbund ein Zertifikat „Apple Development“, signiert `build-app.sh` damit; die Freigabe „Bedienungshilfen“ bleibt dann über Neubauten erhalten. Ohne Zertifikat (oder mit `SIGN_IDENTITY=-`) wird ad-hoc signiert, und die Freigabe muss nach jedem Neubau neu erteilt werden. Ändert sich die Signatur, öffnet `install.sh` die Seite „Bedienungshilfen“: MonitorDeck dort aus- und wieder einschalten.
 
 Die App ist nicht notarisiert; beim ersten Start siehe oben. Beim ersten Start fragt die App einmalig, ob sie beim Anmelden starten soll. Autostart: Schalter „Beim Anmelden starten“ in den Einstellungen (⌘,), Tab „Allgemein“ oder `MonitorDeck.app/Contents/MacOS/MonitorDeck --autostart on|off` (muss aus dem App-Bundle laufen). Nach einem Neubau oder Verschieben der App kann der Eintrag neu gesetzt werden müssen (ungeprüft).
 
