@@ -29,7 +29,7 @@
 ## Definition of Done
 - Laufzeit-Smoketest nach Änderungen am DDC-Code: `swift build && .build/debug/MonitorDeck --selftest` (Monitor am USB-C, Werte plausibel).
 - Aussagen zu Monitor-Funktionen, Firmware oder Kompatibilität nur mit Quelle (Herstellerseite, Handbuch, eigener Test); sonst „ungeprüft“.
-- Verifikationsregeln: siehe globale `CLAUDE.md`, Abschnitt „Verifikation & Sorgfalt“.
+- Verifikationsregeln: siehe globale Regeln, Prinzipien P01 bis P03 (`~/Projekte/arbeitsweise/canon/principles.md`).
 - Commit-Texte Englisch, Quelle: `session-closer`.
 
 ## Regeln
